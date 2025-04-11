@@ -27,16 +27,62 @@ knitr::opts_chunk$set(echo = TRUE, cache = FALSE)
 
 To submit homework, please submit Rmd and html files to bruinlearn by the deadline.
 
+```{r}
+library(tidyverse)
+library(GGally)
+library(corrplot)
+library(gtsummary)
+library(knitr)
+library(faraway)
+library(gridExtra)
+library(ggstatsplot)
+library(MASS)
+library(broom)
+```
 
 ## Q1. Reivew of linear models (60pts)
 The swiss data — use Fertility as the response to practice
+
 ### Q1.1
 
 An initial data analysis that explores the numerical and graphical characteristics of the data.(5pts)
 
+**Solution:**
+```{r, warning=FALSE, message=FALSE}
+data("swiss")
+str(swiss)
+
+# Summary statistics
+summary(swiss)
+
+# Correlation matrix
+ggcorrmat(
+  data = swiss,
+  cor.vars = colnames(swiss),
+  title = "Correlation Matrix with Significance Tests"
+)
+
+# Pairwise plots
+ggpairs(
+  swiss,
+  lower = list(continuous = wrap("smooth", alpha = 0.3, color = "darkgreen")),
+  diag = list(continuous = wrap("densityDiag", fill = "skyblue", alpha = 0.6)),
+  upper = list(continuous = wrap("cor", size = 4))
+)
+
+# Boxplot for Fertility
+ggplot(swiss, aes(y = Fertility)) +
+  geom_boxplot(fill = "lightblue") +
+  theme_minimal() +
+  labs(title = "Boxplot of Fertility")
+```
 ### Q1.2
 
 Variable selection to choose the best model. (10pts)
+**Solution:**
+```{r}
+
+```
 
 ### Q1.3
 
