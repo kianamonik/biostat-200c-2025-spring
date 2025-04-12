@@ -38,6 +38,7 @@ library(gridExtra)
 library(ggstatsplot)
 library(MASS)
 library(broom)
+library(ggfortify)
 ```
 
 ## Q1. Reivew of linear models (60pts)
@@ -71,25 +72,84 @@ ggpairs(
 )
 
 # Boxplot for Fertility
-ggplot(swiss, aes(y = Fertility)) +
-  geom_boxplot(fill = "lightblue") +
-  theme_minimal() +
-  labs(title = "Boxplot of Fertility")
+boxplot(swiss)
 ```
 ### Q1.2
 
 Variable selection to choose the best model. (10pts)
 **Solution:**
 ```{r}
+# Full linear model
+full_model <- lm(Fertility ~ ., data = swiss)
 
+summary(full_model)
+
+# Perform stepwise AIC-based selection 
+step_model <- step(full_model, direction = "both", trace = TRUE)
+
+# Summary of the final selected model
+summary(step_model)
+
+# Check the significance of each variable in the selected model
+drop1(step_model, test = "F")
 ```
+Final model: Fertility ~ Agriculture + Education + Catholic + Infant.Mortality
 
 ### Q1.3
 
 An exploration of transformations to improve the fit of the model. (10pts)
+**Solution:**
+```{r}
+# Check for linearity 
+swiss %>%
+  pivot_longer(cols = -Fertility) %>%
+  ggplot(aes(x = value, y = Fertility)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "steelblue") +
+  facet_wrap(~ name, scales = "free_x") +
+  theme_minimal() +
+  labs(title = "Fertility vs. Predictors (Raw Scale)")
+
+# Add transformed variable
+swiss_trans <- swiss %>%
+  mutate(log_Catholic = log(Catholic + 1))
+
+
+# Fit model with log-transformed Catholic
+model_trans <- lm(Fertility ~ Agriculture + Education + log_Catholic + Infant.Mortality, data = swiss_trans)
+
+# Compare with previous model
+AIC(step_model, model_trans)
+summary(model_trans)
+
+# plot termplots side by side
+par(mfrow=c(2,2))
+termplot(step_model, partial.resid = TRUE, terms = 3)
+termplot(model_trans, partial.resid = TRUE, terms = 3)
+
+# polynomial transformation for Catholic
+model_poly <- lm(Fertility ~ Agriculture + poly(Catholic, 2) + I(Education^2) + Infant.Mortality, data = swiss)
+AIC(step_model, model_poly)
+
+# square root transformation for Catholic
+model_sqrt <- lm(Fertility ~ Agriculture + sqrt(Catholic) + Education + Infant.Mortality, data = swiss)
+AIC(step_model, model_sqrt)
+
+# inverse for Catholic
+model_inv <- lm(Fertility ~ Agriculture + I(1 / (Catholic + 1)) + Education + Infant.Mortality, data = swiss)
+AIC(step_model, model_inv)
+
+```
+
+The original model (without transformation) has the lowest AIC, meaning it fits the data better despite the skew in the Catholic variable.
 
 ### Q1.4
+
 Diagnostics to check the assumptions of your model. (10pts)
+**Solution:**
+```{r}
+
+```
 
 ### Q1.5
 Some predictions of future observations for interesting values of the predictors.(5pts)
