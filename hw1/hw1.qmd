@@ -216,7 +216,8 @@ Create a factor version of the test results and use this to produce an interleav
 **Solution:**
 ```{r}
 data(pima)
-
+str(pima)
+summary(pima)
 # Convert `test` to a factor
 pima <- pima %>%
   mutate(test_factor = factor(test, labels = c("Negative", "Positive")))
@@ -255,12 +256,38 @@ ggplot(pima, aes(x = insulin_na, fill = test_factor)) +
   theme_minimal()
 
 ```
-The spike at zero has been eliminated, revealing that individuals who tested positive for diabetes tend to have higher and more variable insulin levels. Positive test group (teal) shows a broader and more right-skewed distribution. Negative group (red) is tightly clustered at lower insulin values.
+The spike at zero has been eliminated, revealing that individuals who tested positive for diabetes tend to have higher and more variable insulin levels. Positive test group shows a broader and more right-skewed distribution. Negative group is tightly clustered at lower insulin values.
 
 
 ### Q2.3
 
 Replace the incredible zeroes in other variables with the missing value code. Fit a model with the result of the diabetes test as the response and all the other variables as predictors. How many observations were used in the model fitting? Why is this less than the number of observations in the data frame. (10pts)
+**Solution:**
+```{r}
+# New dataset with NA-coded vars
+pima_clean <- pima %>%
+  mutate(
+    glucose = na_if(glucose, 0),
+    diastolic = na_if(diastolic, 0),
+    triceps = na_if(triceps, 0),
+    insulin = na_if(insulin, 0),
+    bmi = na_if(bmi, 0)
+  )
+
+# Fit logistic regression with all predictors
+glm_full <- glm(test ~ pregnant + glucose + diastolic + triceps +
+                  insulin + bmi + diabetes + age,
+                data = pima_clean,
+                family = binomial())
+
+summary(glm_full)
+
+# Number of observations used in the model fitting
+nrow(glm_full$model) 
+```
+The number of observations used in the model is fewer than the original dataset because rows with any missing values in the predictors are automatically dropped (glm() uses na.omit() by default). Since multiple variables had zeroes coded as missing, this reduced the usable sample size.
+The model identified glucose, BMI, and diabetes pedigree as significant predictors of diabetes test results. 
+
 
 ### Q2.4
 
