@@ -312,9 +312,45 @@ anova(glm_reduced, glm_full, test = "Chisq")
 To compare the full and reduced models, I specified the same rows used in the full model when fitting the reduced one. This was necessary because the likelihood ratio test (anova()) requires both models to be fit on the exact same data.\
 The likelihood ratio test gave a p-value of 0.6507, indicating that dropping insulin and triceps did not significantly worsen the model. Therefore, the reduced model is preferred for being simpler with no loss in predictive power.
 
+**Alternative solution (not forrcing the same used rows onto the reduced model):**
+```{r}
+glm_reduced_2 <- glm(test ~ pregnant + glucose + diastolic + bmi + diabetes + age,
+                   data = pima_clean,
+                   family = binomial())
+
+summary(glm_reduced_2)
+
+# Number of observations used
+nrow(glm_reduced_2$model) 
+
+# Compare the models via AIC
+AIC(glm_full, glm_reduced)
+```
+The AIC of the reduced model is lower than that of the full model, indicating a better fit.
+
 ### Q2.5
 
 Use AIC to select a model. You will need to take account of the missing values. Which predictors are selected? How many cases are used in your selected model? (10pts)
+**Solution:**
+```{r}
+# rows actually used by glm_full
+data_used <- glm_full$model  
+
+# Refit full model using only complete cases to lock in the data
+glm_start <- glm(test ~ pregnant + glucose + diastolic + triceps +
+                   insulin + bmi + diabetes + age,
+                 data = data_used,
+                 family = binomial())
+
+# Run AIC stepwise selection with fixed dataset
+model_aic <- step(glm_start, direction = "both", trace = TRUE)
+
+summary(model_aic)
+
+# Number of observations used
+nrow(model_aic$model)
+```
+
 
 ### Q2.6
 
