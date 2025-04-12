@@ -213,11 +213,50 @@ The National Institute of Diabetes and Digestive and Kidney Diseases conducted a
 ### Q2.1 
 
 Create a factor version of the test results and use this to produce an interleaved histogram to show how the distribution of insulin differs between those testing positive and negative. Do you notice anything unbelievable about the plot? (5pts)
+**Solution:**
+```{r}
+data(pima)
 
+# Convert `test` to a factor
+pima <- pima %>%
+  mutate(test_factor = factor(test, labels = c("Negative", "Positive")))
+
+# Interleaved histogram
+ggplot(pima, aes(x = insulin, fill = test_factor)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+  labs(
+    title = "Distribution of Insulin by Diabetes Test Result",
+    x = "Insulin",
+    y = "Count",
+    fill = "Test Result"
+  ) +
+  theme_minimal()
+```
+The histogram reveals that a large number of individuals, both diabetic and non-diabetic, have insulin values recorded as 0. This is highly unlikely in real biological measurements, indicating that these values likely represent missing data.
 
 ### Q2.2
 
 Replace the zero values of `insulin` with the missing value code `NA`. Recreatethe interleaved histogram plot and comment on the distribution. (5pts)
+**Solution:**
+```{r}
+# insulin = 0 as NA
+pima <- pima %>%
+  mutate(insulin_na = ifelse(insulin == 0, NA, insulin))
+
+# Plot histogram using the new variable
+ggplot(pima, aes(x = insulin_na, fill = test_factor)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+  labs(
+    title = "Insulin Distribution (Excludes Zero Values)",
+    x = "Insulin",
+    y = "Count",
+    fill = "Test Result"
+  ) +
+  theme_minimal()
+
+```
+The spike at zero has been eliminated, revealing that individuals who tested positive for diabetes tend to have higher and more variable insulin levels. Positive test group (teal) shows a broader and more right-skewed distribution. Negative group (red) is tightly clustered at lower insulin values.
+
 
 ### Q2.3
 
