@@ -148,8 +148,16 @@ The original model (without transformation) has the lowest AIC, meaning it fits 
 Diagnostics to check the assumptions of your model. (10pts)
 **Solution:**
 ```{r}
+final_model <- step_model 
 
+par(mfrow = c(2, 2))
+plot(final_model)
+
+# Reset graphic parameters
+par(mfrow = c(1, 1))
 ```
+The residuals show no major nonlinear patterns or heteroscedasticity issues. The QQ plot indicates that the residuals are approximately normally distributed, and the scale-location plot shows a random scatter of points, indicating homoscedasticity. No highly influential points are present based on leverage and Cook’s distance. The model appears to be a relatively good fit for the data based on these diagnostics.
+
 
 ### Q1.5
 Some predictions of future observations for interesting values of the predictors.(5pts)
