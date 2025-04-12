@@ -379,13 +379,71 @@ missing.glm %>%
   tbl_regression() %>%
   bold_labels() %>%
   bold_p(t = 0.05)
+
+# Refit the AIC-selected model on the full pima_clean data
+model_final <- glm(test ~ pregnant + glucose + triceps + insulin + bmi + diabetes + age,
+                   data = pima_clean,
+                   family = binomial())
+
+summary(model_final)
+nrow(model_final$model)
+
 ```
 From above regression, we found missingness was not associate with outcome. This means that the distribution of outcome when removing data with missing is still a representative of the original distribution. This justifies the use of "complete case" analysis. 
+The final model was selected via AIC on all available data. It used 392 observations and gave a similar AIC (360.04), confirming that the model remains valid.
+
 
 ### Q2.7 
 
 Using the last fitted model of the previous question, compute the odds ratio of testing positive for diabetes for a woman with a BMI at the first quartile compared with a woman at the third quartile, assuming that all other factors are held constant? Give a confidence interval for this odds ratio.(10pts)
+**Solution:**
+```{r}
+# Calculate 1st and 3rd quartiles of BMI
+bmi_q1 <- quantile(pima_clean$bmi, 0.25, na.rm = TRUE)
+bmi_q3 <- quantile(pima_clean$bmi, 0.75, na.rm = TRUE)
+
+# Extract coefficient for BMI from the final model
+bmi_coef <- coef(model_final)["bmi"]
+bmi_se <- sqrt(vcov(model_final)["bmi", "bmi"])
+
+# Difference in BMI
+diff_bmi <- bmi_q3 - bmi_q1
+
+# Compute log(OR), OR, and CI
+log_or <- diff_bmi * bmi_coef
+or <- exp(log_or)
+
+# 95% CI for log(OR)
+log_or_ci <- c(
+  log_or - 1.96 * diff_bmi * bmi_se,
+  log_or + 1.96 * diff_bmi * bmi_se
+)
+
+# Transform to OR scale
+or_ci <- exp(log_or_ci)
+
+# View results
+round(c(OR = or, CI_lower = or_ci[1], CI_upper = or_ci[2]), 2)
+
+```
+A woman at the 75th percentile of BMI has 1.89 times the odds of testing positive for diabetes compared to a woman at the 25th percentile, holding all other predictors constant.
+The 95% confidence interval for this odds ratio is (1.17, 3.03).
 
 ### Q2.8 
 
 Do women who test positive have higher diastolic blood pressures? Is the diastolic blood pressure significant in the regression model? Explain the distinction between the two questions and discuss why the answers are only apparently contradictory. (10pts)
+
+**Solution:**
+```{r}
+pima_clean %>%
+  group_by(test) %>%
+  summarize(
+    mean_diastolic = mean(diastolic, na.rm = TRUE),
+    sd = sd(diastolic, na.rm = TRUE),
+    n = n()
+  )
+
+t.test(diastolic ~ test, data = pima_clean)
+summary(model_final)  
+```
+Women who tested positive had higher average diastolic blood pressure. However, in the logistic regression model, diastolic BP was not significant meaing the unadjusted difference disappears when controlling for other variables like glucose and age.
