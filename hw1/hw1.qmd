@@ -190,20 +190,20 @@ pred_results
 
 xtabs(round(fit, 1) ~ Education + Catholic, data = pred_results)
 ```
-Fertility for the 25th percentile of Catholic and 25th percentile of Education is 70.5, while for the 75th percentile of Catholic and 75th percentile of Education is 75.6. This indicates that higher education and stronger Catholic values are associated with increased fertility rates.
+Fertility for the 25th percentile of Catholic and 25th percentile of Education is 70.5, while for the 75th percentile of Catholic and 75th percentile of Education is 75.6 and for the 25th percentile of Catholic and 75th percentile of Education is 64.7. This indicates that lower education and stronger Catholic values are associated with increased fertility rates.
 
 ### Q1.6
 An interpretation of the meaning of the model by writing a scientific abstract. (<150 words) (10pts)
 
-  + BACKGROUND: brief intro of the study background, what are the existing findings
+  + BACKGROUND: Fertility rates across regions in Switzerland have historically been influenced by socio-cultural and economic factors. Prior studies suggest that religious affiliation and education may play significant roles in shaping demographic patterns.
   
-  + OBJECTIVE: state the overall purpose of your research, e.g., what kind of knowledge gap you are trying to fill in
+  + OBJECTIVE: To model fertility levels in Swiss provinces using socioeconomic predictors and evaluate their relative influence.
   
-  + METHODS: study design (how these data were collected), outcome definitions, statistical procedures used
+  + METHODS: We analyzed the built-in swiss dataset, using fertility as the outcome variable. A multiple linear regression model was constructed with predictors including Agriculture, Education, Catholic affiliation, and Infant Mortality. Stepwise AIC was used for variable selection, and model diagnostics were performed to verify assumptions.
   
-  + RESULTS: summary of major findings to address the question raised in objective
+  + RESULTS: The final model revealed that higher Catholic affiliation and lower education levels were significantly associated with higher fertility rates. Model assumptions were reasonably satisfied. Predictions across realistic covariate values reflected these relationships
   
-  + CONCLUSIONS:
+  + CONCLUSIONS: Fertility in Swiss regions is strongly associated with cultural and educational factors. These results underscore the demographic impact of religion and education in shaping fertility patterns. Further research is needed to explore the underlying mechanisms and implications for public policy.
 
 
 ## Q2.(70pts)  
