@@ -116,7 +116,8 @@ swiss_trans <- swiss %>%
 
 
 # Fit model with log-transformed Catholic
-model_trans <- lm(Fertility ~ Agriculture + Education + log_Catholic + Infant.Mortality, data = swiss_trans)
+model_trans <- lm(Fertility ~ Agriculture + Education + log_Catholic +
+                    Infant.Mortality, data = swiss_trans)
 
 # Compare with previous model
 AIC(step_model, model_trans)
@@ -128,15 +129,18 @@ termplot(step_model, partial.resid = TRUE, terms = 3)
 termplot(model_trans, partial.resid = TRUE, terms = 3)
 
 # polynomial transformation for Catholic
-model_poly <- lm(Fertility ~ Agriculture + poly(Catholic, 2) + I(Education^2) + Infant.Mortality, data = swiss)
+model_poly <- lm(Fertility ~ Agriculture + poly(Catholic, 2) + I(Education^2) +
+                   Infant.Mortality, data = swiss)
 AIC(step_model, model_poly)
 
 # square root transformation for Catholic
-model_sqrt <- lm(Fertility ~ Agriculture + sqrt(Catholic) + Education + Infant.Mortality, data = swiss)
+model_sqrt <- lm(Fertility ~ Agriculture + sqrt(Catholic) + Education +
+                   Infant.Mortality, data = swiss)
 AIC(step_model, model_sqrt)
 
 # inverse for Catholic
-model_inv <- lm(Fertility ~ Agriculture + I(1 / (Catholic + 1)) + Education + Infant.Mortality, data = swiss)
+model_inv <- lm(Fertility ~ Agriculture + I(1 / (Catholic + 1)) + Education +
+                  Infant.Mortality, data = swiss)
 AIC(step_model, model_inv)
 
 ```
@@ -161,6 +165,32 @@ The residuals show no major nonlinear patterns or heteroscedasticity issues. The
 
 ### Q1.5
 Some predictions of future observations for interesting values of the predictors.(5pts)
+**Solution:**
+```{r}
+# Quantile values for predictors
+catholic_vals <- quantile(swiss$Catholic, c(0.25, 0.75))
+edu_vals <- quantile(swiss$Education, c(0.25, 0.75))
+
+# Create prediction grid
+pred_df <- tibble(
+  Catholic = rep(catholic_vals, each = 2),
+  Education = rep(edu_vals, times = 2),
+  Agriculture = mean(swiss$Agriculture),
+  Infant.Mortality = mean(swiss$Infant.Mortality)
+)
+
+# Generate predictions + 95% prediction intervals
+pred_output <- predict(final_model, newdata = pred_df, interval = "prediction")
+
+# Combine with input
+pred_results <- bind_cols(pred_df, as_tibble(pred_output))
+
+# View results
+pred_results
+
+xtabs(round(fit, 1) ~ Education + Catholic, data = pred_results)
+```
+Fertility for the 25th percentile of Catholic and 25th percentile of Education is 70.5, while for the 75th percentile of Catholic and 75th percentile of Education is 75.6. This indicates that higher education and stronger Catholic values are associated with increased fertility rates.
 
 ### Q1.6
 An interpretation of the meaning of the model by writing a scientific abstract. (<150 words) (10pts)
