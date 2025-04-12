@@ -314,7 +314,8 @@ The likelihood ratio test gave a p-value of 0.6507, indicating that dropping ins
 
 **Alternative solution (not forrcing the same used rows onto the reduced model):**
 ```{r}
-glm_reduced_2 <- glm(test ~ pregnant + glucose + diastolic + bmi + diabetes + age,
+glm_reduced_2 <- glm(test ~ pregnant + glucose + diastolic + bmi + diabetes +
+                       age,
                    data = pima_clean,
                    family = binomial())
 
@@ -370,7 +371,8 @@ pima <- pima %>%
     diabetes2 = ifelse(diabetes == 0, NA, diabetes),
     age2 = ifelse(age == 0, NA, age))
 
-pima$missingNA = ifelse(apply(is.na(dplyr::select(pima, contains("2"))), 1, sum) > 0, 1, 0)
+pima$missingNA = ifelse(apply(is.na(dplyr::select(pima, contains("2"))), 1,
+                              sum) > 0, 1, 0)
 
 missing.glm <- glm(test ~ missingNA, family = binomial(), data = pima)
 
@@ -381,7 +383,8 @@ missing.glm %>%
   bold_p(t = 0.05)
 
 # Refit the AIC-selected model on the full pima_clean data
-model_final <- glm(test ~ pregnant + glucose + triceps + insulin + bmi + diabetes + age,
+model_final <- glm(test ~ pregnant + glucose + triceps + insulin + bmi +
+                     diabetes + age,
                    data = pima_clean,
                    family = binomial())
 
@@ -424,7 +427,6 @@ or_ci <- exp(log_or_ci)
 
 # View results
 round(c(OR = or, CI_lower = or_ci[1], CI_upper = or_ci[2]), 2)
-
 ```
 A woman at the 75th percentile of BMI has 1.89 times the odds of testing positive for diabetes compared to a woman at the 25th percentile, holding all other predictors constant.
 The 95% confidence interval for this odds ratio is (1.17, 3.03).
