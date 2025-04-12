@@ -292,6 +292,25 @@ The model identified glucose, BMI, and diabetes pedigree as significant predicto
 ### Q2.4
 
 Refit the model but now without the insulin and triceps predictors. How many observations were used in fitting this model? Devise a test to compare this model with that in the previous question. (10pts)
+**Solution:**
+```{r}
+# Get the row indices used in glm_full
+used_rows <- as.numeric(rownames(glm_full$model))
+
+# Refit reduced model
+glm_reduced <- glm(test ~ pregnant + glucose + diastolic + bmi + diabetes + age,
+                   data = pima_clean[used_rows, ],
+                   family = binomial())
+summary(glm_reduced)
+
+# Number of observations used
+nrow(glm_reduced$model) 
+
+# Compare full vs. reduced model using LRT
+anova(glm_reduced, glm_full, test = "Chisq")
+```
+To compare the full and reduced models, I specified the same rows used in the full model when fitting the reduced one. This was necessary because the likelihood ratio test (anova()) requires both models to be fit on the exact same data.\
+The likelihood ratio test gave a p-value of 0.6507, indicating that dropping insulin and triceps did not significantly worsen the model. Therefore, the reduced model is preferred for being simpler with no loss in predictive power.
 
 ### Q2.5
 
