@@ -251,15 +251,16 @@ First, observations (counties) may not be fully independent due to the shared st
 Run a logistic regression, using variables `state`, ..., `percent_rural` as predictors. 
 
 ```{r}
-
+library(broom) 
+# Logistic regression binomial
+full_model <- glm(cbind(deaths, confirmed - deaths) ~ ., 
+                  family = binomial(), 
+                  data = county_data)
 ```
 
 ### Q1.4 (10pts)
 
 Interpret the regression coefficients of 3 significant predictors with p-value <0.05.
-```{r}
-
-```
 
 ### Q1.5 (10pts)
 
