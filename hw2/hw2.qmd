@@ -253,9 +253,7 @@ Run a logistic regression, using variables `state`, ..., `percent_rural` as pred
 ```{r}
 library(broom) 
 # Logistic regression binomial
-full_model <- glm(cbind(deaths, confirmed - deaths) ~ ., 
-                  family = binomial(), 
-                  data = county_data)
+full_model <- glm(cbind(deaths, confirmed - deaths) ~ state + percent_fair_or_poor_health + percent_smokers + percent_adults_with_obesity + percent_with_access_to_exercise_opportunities + percent_excessive_drinking + percent_uninsured + percent_some_college + percent_unemployed + percent_children_in_poverty + percent_single_parent_households + percent_severe_housing_problems + overcrowding + percent_adults_with_diabetes + percent_food_insecure + percent_insufficient_sleep + percent_uninsured_2 + median_household_income + average_traffic_volume_per_meter_of_major_roadways + percent_homeowners + population_2 + percent_less_than_18_years_of_age + percent_65_and_over + percent_black + percent_asian + percent_hispanic + percent_female + percent_rural, family = binomial(), data = county_data)
 ```
 
 ### Q1.4 (10pts)
@@ -266,30 +264,77 @@ tidy(full_model) %>%
   arrange(p.value) %>% 
   filter(p.value < 0.05)
 ```
-percent_hispanic: For each 1 percentage point increase in the percent of Hispanic residents in a county, the log-odds of COVID-19 death among confirmed cases decreases by 0.070, holding other variables constant.\
-Converting to odds ratio: exp(-0.070) ≈ 0.933\
-So, the odds of death decrease by ~6.7% for every 1% increase in the Hispanic population.\
+percent_hispanic: For each 1 percentage point increase in the percent of Hispanic residents in a county, the log-odds of COVID-19 death among confirmed cases decreases by 0.0192, holding other variables constant.\
+Converting to odds ratio: exp(-0.0192) ≈ 0.981\
+So, the odds of death decrease by ~1.9% for every 1% increase in the Hispanic population.\
 
-percent_insufficient_sleep: For every 1% increase in the rate of insufficient sleep (adults who report not getting enough sleep), the log-odds of death increase by 0.092.\
-Converting to odds ratio: exp(0.092) ≈ 1.096\
-So, the odds of death increase by about 9.6% for every 1% increase in the rate of insufficient sleep.\
+percent_insufficient_sleep: For every 1% increase in the rate of insufficient sleep (adults who report not getting enough sleep), the log-odds of death increase by 0.0444.\
+Converting to odds ratio: exp(0.0444) ≈ 1.0454\
+So, the odds of death increase by about 4.54% for every 1% increase in the rate of insufficient sleep.\
 
-median_household_income: For each $1 increase in median household income, the log-odds of death decrease by 0.0000278.\
-Convert to a meaningful unit like $10,000: 10000 * -0.0000278 = -0.278\
-Converting to odds ratio: exp(-0.278) ≈ 0.757\
-So, the odds of COVID-19 death decrease by about 24.3% for every $10,000 increase in median household income.\
+median_household_income: For each $1 increase in median household income, the log-odds of death decrease by -1.084392e-05.\
+Convert to a meaningful unit like $10,000: 10000 * -1.084392e-05 = -0.1084\
+Converting to odds ratio: exp(-0.1084) ≈ 0.897\
+So, the odds of COVID-19 death decrease by about 10.3% for every $10,000 increase in median household income.\
 
 ### Q1.5 (10pts)
 
 Apply analysis of deviance to (1) evaluate the goodness of fit of the model and (2) compare the model to the intercept-only model. 
+```{r}
+null_model <- glm(cbind(deaths, confirmed - deaths) ~ 1,
+                  family = binomial(),
+                  data = county_data)
+
+anova(null_model, full_model, test = "Chisq")
+
+# Extract residual deviance and degrees of freedom
+res_dev <- deviance(full_model)
+res_df <- df.residual(full_model)
+
+# Perform chi-squared goodness-of-fit test
+p_value <- pchisq(res_dev, df = res_df, lower.tail = FALSE)
+
+# Output
+cat("Residual deviance:", res_dev, "\n")
+cat("Residual degrees of freedom:", res_df, "\n")
+cat("Goodness-of-fit p-value:", p_value, "\n")
+```
+Model Comparison:\
+The test returned a p-value of 2.2e-16, indicating that the full model provides a significantly better fit to the data than the null model.\
+
+Goodness-of-Fit:\
+The residual deviance of the full model is 1842.755, and the residual degrees of freedom is 1368. The Goodness-of-fit p-value is extremely small (1.099787e-16), suggesting that the model may not fit the data perfectly .
 
 ### Q1.6 (10pts)
 
 Perform analysis of deviance to evaluate the significance of each predictor. Display the 10 most significant predictors.
+```{r}
+library(car)
+# Type II Analysis of Deviance 
+deviance_table <- Anova(full_model, type = "II", test = "LR")
+
+# Pull out the top 10 by p‐value
+top_predictors <- as.data.frame(deviance_table) %>%
+  rownames_to_column("Predictor") %>%
+  arrange(`Pr(>Chisq)`) %>%  
+  slice(1:10)
+
+print(top_predictors)
+```
 
 ### Q1.7 (5pts)
 
 Construct confidence intervals of regression coefficients.
+```{r}
+# Profile‐likelihood 95% CIs for all coefficients
+ci_profile <- confint(full_model)
+print(ci_profile)
+
+# Wald‐type 95% CIs via broom::tidy (for comparison)
+library(broom)
+ci_wald <- tidy(full_model, conf.int = TRUE)
+print(ci_wald)
+```
 
 ### Q1.8 (5pts)
 
