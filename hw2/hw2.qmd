@@ -326,19 +326,76 @@ print(top_predictors)
 
 Construct confidence intervals of regression coefficients.
 ```{r}
-# Profile‐likelihood 95% CIs for all coefficients
-ci_profile <- confint(full_model)
-print(ci_profile)
+# 1. Wald CIs via confint.default()
+wald_ci <- confint.default(full_model)
+colnames(wald_ci) <- c("2.5 %", "97.5 %")
+print(wald_ci)
 
-# Wald‐type 95% CIs via broom::tidy (for comparison)
+# 2. Manual: Estimate ± 1.96 * SE
+coefs <- summary(full_model)$coefficients
+manual_ci <- data.frame(
+  Estimate = coefs[, "Estimate"],
+  `2.5 %`   = coefs[, "Estimate"] - 1.96 * coefs[, "Std. Error"],
+  `97.5 %`  = coefs[, "Estimate"] + 1.96 * coefs[, "Std. Error"]
+)
+print(manual_ci)
+```
+```{r}
 library(broom)
-ci_wald <- tidy(full_model, conf.int = TRUE)
-print(ci_wald)
+library(tidyverse)
+
+# 1. Profile-likelihood CIs throws out warnings
+ci_profile <- confint(full_model) %>% 
+  as_tibble(rownames = "term") %>% 
+  rename(profile_low = `2.5 %`, profile_high = `97.5 %`)
+
+# 2. Wald CIs (faster approximation)
+ci_wald <- tidy(full_model, conf.int = TRUE, conf.level = 0.95) %>% 
+  select(term, estimate, std.error, 
+         wald_low = conf.low, wald_high = conf.high, 
+         p.value)
+
+# 3. Combine results
+full_results <- ci_wald %>% 
+  left_join(ci_profile, by = "term") %>% 
+  arrange(p.value)
+
+# 4. Display top predictors
+full_results %>% 
+  head(10) %>% 
+  knitr::kable(digits = 4)
 ```
 
 ### Q1.8 (5pts)
 
 Plot the deviance residuals against the fitted values. Are there potential outliers?
+```{r}
+library(ggplot2)
+
+# Extract deviance residuals and fitted probabilities
+resid_dev   <- residuals(full_model, type = "deviance")
+fitted_prob <- fitted(full_model)
+
+# Build a data frame
+plot_df <- data.frame(
+  fitted = fitted_prob,
+  dev_resid = resid_dev
+)
+
+# 3. Plot
+ggplot(plot_df, aes(x = fitted, y = dev_resid)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  # highlight points with |resid| > 2
+  geom_point(data = subset(plot_df, abs(dev_resid) > 2),
+             color = "red", size = 1) +
+  labs(
+    title = "Deviance Residuals vs Fitted Values",
+    x     = "Fitted Probability of Death",
+    y     = "Deviance Residual"
+  ) +
+  theme_minimal()
+```
 
 ### Q1.9 (5pts)
 
