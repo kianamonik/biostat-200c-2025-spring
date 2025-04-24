@@ -504,75 +504,70 @@ Find the best sub-model using the lasso with cross validation.
 **Solution:**
 ```{r}
 library(glmnet)
+
+# 1) Build the design matrix and response
 x <- model.matrix(
-  cbind(deaths, confirmed - deaths) ~ state 
-    + percent_fair_or_poor_health 
-    + percent_smokers 
-    + percent_adults_with_obesity 
-    + percent_with_access_to_exercise_opportunities 
-    + percent_excessive_drinking 
-    + percent_uninsured 
-    + percent_some_college 
-    + percent_unemployed 
-    + percent_children_in_poverty 
-    + percent_single_parent_households 
-    + percent_severe_housing_problems 
-    + overcrowding 
-    + percent_adults_with_diabetes 
-    + percent_food_insecure 
-    + percent_insufficient_sleep 
-    + percent_uninsured_2 
-    + median_household_income 
-    + average_traffic_volume_per_meter_of_major_roadways 
-    + percent_homeowners 
-    + population_2 
-    + percent_less_than_18_years_of_age 
-    + percent_65_and_over 
-    + percent_black 
-    + percent_asian 
-    + percent_hispanic 
-    + percent_female 
+  deaths/confirmed ~ state
+    + percent_fair_or_poor_health
+    + percent_smokers
+    + percent_adults_with_obesity
+    + percent_with_access_to_exercise_opportunities
+    + percent_excessive_drinking
+    + percent_uninsured
+    + percent_some_college
+    + percent_unemployed
+    + percent_children_in_poverty
+    + percent_single_parent_households
+    + percent_severe_housing_problems
+    + overcrowding
+    + percent_adults_with_diabetes
+    + percent_food_insecure
+    + percent_insufficient_sleep
+    + percent_uninsured_2
+    + median_household_income
+    + average_traffic_volume_per_meter_of_major_roadways
+    + percent_homeowners
+    + population_2
+    + percent_less_than_18_years_of_age
+    + percent_65_and_over
+    + percent_black
+    + percent_asian
+    + percent_hispanic
+    + percent_female
     + percent_rural,
   data = county_data
+)[, -1]
+
+y_mat <- cbind(
+  deaths   = county_data$deaths,
+  failures = county_data$confirmed - county_data$deaths
 )
-# drop the intercept column
-x <- x[, -1]
 
-y_prop <- county_data$deaths / county_data$confirmed
-wts    <- county_data$confirmed
-
-# 10‐fold CV for lasso
+# 2) 10‐fold CV lasso (binomial)
 set.seed(123)
 cv_lasso <- cv.glmnet(
-  x, y_prop,
+  x, y_mat,
   family       = "binomial",
-  weights      = wts,
   type.measure = "deviance",
   nfolds       = 10
 )
 
-# Plot the CV curve
+# 3) Plot CV curve
 plot(cv_lasso)
-abline(v = log(c(cv_lasso$lambda.min, cv_lasso$lambda.1se)), col = c("red","blue"), lty=2)
+abline(v = log(c(cv_lasso$lambda.min, cv_lasso$lambda.1se)),
+       col = c("red","blue"), lty = 2)
 
-# Extract best λ’s
-lambda_min <- cv_lasso$lambda.min
-lambda_1se <- cv_lasso$lambda.1se
-cat("λ_min =", round(lambda_min,5), "  λ_1se =", round(lambda_1se,5), "\n\n")
+# 4) Relax the penalty: pick λ = 0.1 * λ_min
+lambda <- 0.1 * cv_lasso$lambda.min
+cat("Relaxed λ =", lambda, "\n")
 
-# Coefficients at λ_min
-coefs_min <- coef(cv_lasso, s = "lambda.min")
-nz        <- which(coefs_min != 0)
-selected  <- rownames(coefs_min)[nz]
-cat("Nonzero coefficients at λ_min:\n")
-print(selected)
-
-# Tidy into a data.frame
-lasso_coefs <- data.frame(
-  term     = rownames(coefs_min)[nz],
-  estimate = as.numeric(coefs_min[nz])
+# 5) Extract nonzero coefs at relaxed λ
+coefs <- coef(cv_lasso$glmnet.fit, s = lambda)
+nz_idx      <- which(coefs != 0)
+data.frame(
+  term     = rownames(coefs)[nz_idx],
+  estimate = as.numeric(coefs[nz_idx])
 )
-print(lasso_coefs)
 ```
 
 ## Q2. Odds ratios (20pts)
