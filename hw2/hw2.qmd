@@ -1,16 +1,15 @@
 ---
 title: "Biostat 200C Homework 2"
+author: "Kiana Mohammadinik"
 subtitle: Due Apr 25 @ 11:59PM
 date: today
 format:
-  html:
+ pdf:
     theme: cosmo
     embed-resources: true
     number-sections: true
     toc: true
-    toc-depth: 4
-    toc-location: left
-    code-fold: false
+    colorlinks: true
 engine: knitr
 knitr:
   opts_chunk: 
@@ -29,28 +28,29 @@ To submit homework, please upload both Rmd and html files to Bruinlearn by the d
 
 ## Q1. CFR of COVID-19 (90pts)
 
-Of primary interest to public is the risk of dying from COVID-19. A commonly used measure is case fatality rate/ratio/risk (CFR), which is defined as
-$$
+Of primary interest to public is the risk of dying from COVID-19. A commonly used measure is case fatality rate/ratio/risk (CFR), which is defined as $$
 \frac{\text{number of deaths from disease}}{\text{number of diagnosed cases of disease}}.
-$$
-Apparently CFR is not a fixed constant; it changes with time, location, and other factors. Also CFR is different from the infection fatality rate (IFR), the probability that someone infected with COVID-19 dies from it. 
+$$ Apparently CFR is not a fixed constant; it changes with time, location, and other factors. Also CFR is different from the infection fatality rate (IFR), the probability that someone infected with COVID-19 dies from it.
 
 In this exercise, we use logistic regression to study how US county-level CFR changes according to demographic information and some health-, education-, and economy-indicators.
 
 ### Data sources
 
-- `04-04-2020.csv.gz`: The data on COVID-19 confirmed cases and deaths on 2020-04-04 is retrieved from the [Johns Hopkins COVID-19 data repository](https://github.com/CSSEGISandData/COVID-19). It was downloaded from this [link](https://github.com/CSSEGISandData/COVID-19) (commit 0174f38). This repository has been archived by the owner on Mar 10, 2023. It is now read-only. You can download data from box: <https://ucla.box.com/s/brb3vz4nwoq8pjkcutxncymqw583d39l>
+-   `04-04-2020.csv.gz`: The data on COVID-19 confirmed cases and deaths on 2020-04-04 is retrieved from the [Johns Hopkins COVID-19 data repository](https://github.com/CSSEGISandData/COVID-19). It was downloaded from this [link](https://github.com/CSSEGISandData/COVID-19) (commit 0174f38). This repository has been archived by the owner on Mar 10, 2023. It is now read-only. You can download data from box: <https://ucla.box.com/s/brb3vz4nwoq8pjkcutxncymqw583d39l>
 
-- `us-county-health-rankings-2020.csv.gz`: The 2020 County Health Ranking Data was released by [County Health Rankings](https://www.countyhealthrankings.org). The data was downloaded from the [Kaggle Uncover COVID-19 Challenge](https://www.kaggle.com/roche-data-science-coalition/uncover) (version 1). You can download data from box: <https://ucla.box.com/s/brb3vz4nwoq8pjkcutxncymqw583d39l>
+-   `us-county-health-rankings-2020.csv.gz`: The 2020 County Health Ranking Data was released by [County Health Rankings](https://www.countyhealthrankings.org). The data was downloaded from the [Kaggle Uncover COVID-19 Challenge](https://www.kaggle.com/roche-data-science-coalition/uncover) (version 1). You can download data from box: <https://ucla.box.com/s/brb3vz4nwoq8pjkcutxncymqw583d39l>
 
 ### data preparation
 
 Load the `tidyverse` package for data manipulation and visualization.
+
 ```{r}
 # tidyverse of data manipulation and visualization
 library(tidyverse)
 ```
+
 Read in the data of COVID-19 cases reported on 2020-04-04.
+
 ```{r}
 county_count <- read_csv("04-04-2020.csv") %>%
   # cast fips into dbl for use as a key for joining tables
@@ -58,12 +58,15 @@ county_count <- read_csv("04-04-2020.csv") %>%
   filter(Country_Region == "US") %>%
   print(width = Inf)
 ```
+
 Standardize the variable names by changing them to lower case.
+
 ```{r}
 names(county_count) <- str_to_lower(names(county_count))
 ```
 
 Sanity check by displaying the unique US states and territories:
+
 ```{r}
 county_count %>%
   select(province_state) %>%
@@ -71,7 +74,9 @@ county_count %>%
   arrange(province_state) %>%
   print(n = Inf)
 ```
+
 We want to exclude entries from `Diamond Princess`, `Grand Princess`, `Guam`, `Northern Mariana Islands`, `Puerto Rico`, `Recovered`, and `Virgin Islands`, and only consider counties from 50 states and DC.
+
 ```{r}
 county_count <- county_count %>%
   filter(!(province_state %in% c("Diamond Princess", "Grand Princess", 
@@ -79,7 +84,9 @@ county_count <- county_count %>%
                                  "Puerto Rico", "Virgin Islands"))) %>%
   print(width = Inf)
 ```
+
 Graphical summarize the COVID-19 confirmed cases and deaths on 2020-04-04 by state.
+
 ```{r}
 county_count %>%
   # turn into long format for easy plotting
@@ -95,6 +102,7 @@ county_count %>%
 ```
 
 Read in the 2020 county-level health ranking data.
+
 ```{r}
 county_info <- read_csv("us-county-health-rankings-2020.csv") %>%
   filter(!is.na(county)) %>%
@@ -147,34 +155,45 @@ county_info <- read_csv("us-county-health-rankings-2020.csv") %>%
 ```
 
 For stability in estimating CFR, we restrict to counties with $\ge 5$ confirmed cases.
+
 ```{r}
 county_count <- county_count %>%
   filter(confirmed >= 5)
-``` 
-We join the COVID-19 count data and county-level information using FIPS (Federal Information Processing System) as key. 
+```
+
+We join the COVID-19 count data and county-level information using FIPS (Federal Information Processing System) as key.
+
 ```{r}
 county_data <- county_count %>%
   left_join(county_info, by = "fips") %>%
   print(width = Inf)
-``` 
+```
+
 Numerical summaries of each variable:
+
 ```{r}
 summary(county_data)
-``` 
+```
+
 List rows in `county_data` that don't have a match in `county_count`:
+
 ```{r}
 county_data %>%
   filter(is.na(state) & is.na(county)) %>%
   print(n = Inf)
-``` 
-We found there are some rows that miss `fips`. 
+```
+
+We found there are some rows that miss `fips`.
+
 ```{r}
 county_count %>%
   filter(is.na(fips)) %>%
   select(fips, admin2, province_state) %>%
   print(n = Inf)
-``` 
+```
+
 We need to (1) manually set the `fips` for some counties, (2) discard those `Unassigned`, `unassigned` or `Out of`, and (3) try to join with `county_info` again.
+
 ```{r}
 county_data <- county_count %>%
   # manually set FIPS for some counties
@@ -197,59 +216,65 @@ county_data <- county_count %>%
   filter(!(is.na(fips) | str_detect(admin2, "Out of") | str_detect(admin2, "Unassigned"))) %>%
   left_join(county_info, by = "fips") %>%
   print(width = Inf)
-``` 
+```
+
 Summarize again
+
 ```{r}
 summary(county_data)
-``` 
+```
+
 If there are variables with missing value for many counties, we go back and remove those variables from consideration.
 
 Let's create a final data frame for analysis.
+
 ```{r}
 county_data <- county_data %>%
   mutate(state = as.factor(state)) %>%
   select(county, confirmed, deaths, state, percent_fair_or_poor_health:percent_rural)
 summary(county_data)
-``` 
+```
+
 Display the 10 counties with highest CFR.
+
 ```{r}
 county_data %>%
   mutate(cfr = deaths / confirmed) %>%
   select(county, state, confirmed, deaths, cfr) %>%
   arrange(desc(cfr)) %>%
   top_n(10)
-``` 
+```
+
 Write final data into a csv file for future use.
+
 ```{r}
 write_csv(county_data, "covid19-county-data-20200404.csv")
-``` 
+```
 
 ### Note:
 
-Given that the datasets were collected in the middle of the pandemic, what assumptions of CFR might be violated by defining CFR as `deaths/confirmed` from this data set? 
+Given that the datasets were collected in the middle of the pandemic, what assumptions of CFR might be violated by defining CFR as `deaths/confirmed` from this data set?
 
 Because COVID-19 pandemic was still ongoing in 2020, we should realize some critical assumptions for defining CFR are not met using this datasets.
 
-1. Numbers of confirmed cases do not reflect the number of diagnosed people. This is mainly limited by the availability of testing.
+1.  Numbers of confirmed cases do not reflect the number of diagnosed people. This is mainly limited by the availability of testing.
 
-2. Some confirmed cases may die later.
+2.  Some confirmed cases may die later.
 
 With acknowledgement of these severe limitations, we continue to use `deaths/confirmed` as a very rough proxy of CFR.
 
 ### Q1.1 (5pts)
 
-Read and run above code to generate a data frame `county_data` that includes county-level COVID-19 confirmed cases and deaths, demographic, and health related information. 
+Read and run above code to generate a data frame `county_data` that includes county-level COVID-19 confirmed cases and deaths, demographic, and health related information.
 
 ### Q1.2(5pts)
 
-What assumptions of logistic regression may be violated by this data set?
-Logistic regression assumes that the log-odds of the outcome is linearly related to the predictors, that observations are independent, and that there is no multicollinearity among predictors, but our dataset may violate some of these assumptions in several ways.
-First, observations (counties) may not be fully independent due to the shared state/federal-level policies or geographic proximity. Second, some predictors might have nonlinear relationships with the outcome, violating the linearity of the logit. Third, strong correlations among socioeconomic and demographic variables may lead to multicollinearity. Also, counties with very small populations or extreme CFRs may have extra undue influence on the model and lead to high-leverage or outlier effects.
+What assumptions of logistic regression may be violated by this data set? Logistic regression assumes that the log-odds of the outcome is linearly related to the predictors, that observations are independent, and that there is no multicollinearity among predictors, but our dataset may violate some of these assumptions in several ways. First, observations (counties) may not be fully independent due to the shared state/federal-level policies or geographic proximity. Second, some predictors might have nonlinear relationships with the outcome, violating the linearity of the logit. Third, strong correlations among socioeconomic and demographic variables may lead to multicollinearity. Also, counties with very small populations or extreme CFRs may have extra undue influence on the model and lead to high-leverage or outlier effects.
 
 ### Q1.3 (10pts)
 
-Run a logistic regression, using variables `state`, ..., `percent_rural` as predictors. 
-**Solution:**
+Run a logistic regression, using variables `state`, ..., `percent_rural` as predictors. **Solution:**
+
 ```{r}
 library(broom) 
 # Logistic regression binomial
@@ -258,30 +283,31 @@ full_model <- glm(cbind(deaths, confirmed - deaths) ~ state + percent_fair_or_po
 
 ### Q1.4 (10pts)
 
-Interpret the regression coefficients of 3 significant predictors with p-value <0.05.
-**Solution:**
+Interpret the regression coefficients of 3 significant predictors with p-value \<0.05. **Solution:**
+
 ```{r}
 tidy(full_model) %>% 
   arrange(p.value) %>% 
   filter(p.value < 0.05)
 ```
+
 percent_hispanic: For each 1 percentage point increase in the percent of Hispanic residents in a county, the log-odds of COVID-19 death among confirmed cases decreases by 0.0192, holding other variables constant.\
 Converting to odds ratio: exp(-0.0192) ≈ 0.981\
-So, the odds of death decrease by ~1.9% for every 1% increase in the Hispanic population.\
+So, the odds of death decrease by \~1.9% for every 1% increase in the Hispanic population.\
 
 percent_insufficient_sleep: For every 1% increase in the rate of insufficient sleep (adults who report not getting enough sleep), the log-odds of death increase by 0.0444.\
 Converting to odds ratio: exp(0.0444) ≈ 1.0454\
 So, the odds of death increase by about 4.54% for every 1% increase in the rate of insufficient sleep.\
 
-median_household_income: For each $1 increase in median household income, the log-odds of death decrease by -1.084392e-05.\
-Convert to a meaningful unit like $10,000: 10000 * -1.084392e-05 = -0.1084\
+median_household_income: For each \$1 increase in median household income, the log-odds of death decrease by -1.084392e-05.\
+Convert to a meaningful unit like \$10,000: 10000 \* -1.084392e-05 = -0.1084\
 Converting to odds ratio: exp(-0.1084) ≈ 0.897\
-So, the odds of COVID-19 death decrease by about 10.3% for every $10,000 increase in median household income.\
+So, the odds of COVID-19 death decrease by about 10.3% for every \$10,000 increase in median household income.\
 
 ### Q1.5 (10pts)
 
-Apply analysis of deviance to (1) evaluate the goodness of fit of the model and (2) compare the model to the intercept-only model.
-**Solution:**
+Apply analysis of deviance to (1) evaluate the goodness of fit of the model and (2) compare the model to the intercept-only model. **Solution:**
+
 ```{r}
 null_model <- glm(cbind(deaths, confirmed - deaths) ~ 1,
                   family = binomial(),
@@ -301,6 +327,7 @@ cat("Residual deviance:", res_dev, "\n")
 cat("Residual degrees of freedom:", res_df, "\n")
 cat("Goodness-of-fit p-value:", p_value, "\n")
 ```
+
 Model Comparison:\
 The test returned a p-value of 2.2e-16, indicating that the full model provides a significantly better fit to the data than the null model.\
 
@@ -309,8 +336,8 @@ The residual deviance of the full model is 1842.755, and the residual degrees of
 
 ### Q1.6 (10pts)
 
-Perform analysis of deviance to evaluate the significance of each predictor. Display the 10 most significant predictors.
-**Solution:**
+Perform analysis of deviance to evaluate the significance of each predictor. Display the 10 most significant predictors. **Solution:**
+
 ```{r}
 library(car)
 # Type II Analysis of Deviance 
@@ -327,11 +354,12 @@ print(top_predictors)
 
 ### Q1.7 (5pts)
 
-Construct confidence intervals of regression coefficients.
-**Solution:**
+Construct confidence intervals of regression coefficients. **Solution:**
+
 ```{r, warning=FALSE}
 confint(full_model)
 ```
+
 ```{r}
 # ALTERNATIVE SOLUTION (commented out)
 # library(broom)
@@ -361,8 +389,8 @@ confint(full_model)
 
 ### Q1.8 (5pts)
 
-Plot the deviance residuals against the fitted values. Are there potential outliers?
-**Solution:**
+Plot the deviance residuals against the fitted values. Are there potential outliers? **Solution:**
+
 ```{r}
 library(ggplot2)
 
@@ -393,13 +421,15 @@ ggplot(plot_df, aes(x = fitted, y = dev_resid)) +
 
 ### Q1.9 (5pts)
 
-Plot the half-normal plot. Are there potential outliers in predictor space?
-**Solution:**
+Plot the half-normal plot. Are there potential outliers in predictor space? **Solution:**
+
 ```{r}
 library(faraway)
 halfnorm(hatvalues(full_model))
 ```
+
 Based on the plot, the points 931 and 367 are potential outliers in predictor space.\
+
 ```{r}
 # ALTERNATIVE SOLUTION (commented out)
 # Compute leverage (hat) values
@@ -440,12 +470,10 @@ Based on the plot, the points 931 and 367 are potential outliers in predictor sp
 #  head(10)
 ```
 
-
-
 ### Q1.10 (10pts)
 
-Find the best sub-model using the AIC criterion.
-**Solution:**
+Find the best sub-model using the AIC criterion. **Solution:**
+
 ```{r}
 library(MASS)
 
@@ -466,35 +494,15 @@ cat("\nAIC of selected model:", AIC(step_model), "\n")
 # Inspect coefficient estimates
 summary(step_model)
 ```
-Best AIC model:
-cbind(deaths, confirmed - deaths) ~ state
-  + percent_fair_or_poor_health
-  + percent_smokers
-  + percent_excessive_drinking
-  + percent_uninsured
-  + percent_some_college
-  + percent_unemployed
-  + percent_children_in_poverty
-  + percent_single_parent_households
-  + percent_severe_housing_problems
-  + percent_adults_with_diabetes
-  + percent_food_insecure
-  + percent_insufficient_sleep
-  + percent_uninsured_2
-  + median_household_income
-  + percent_homeowners
-  + population_2
-  + percent_less_than_18_years_of_age
-  + percent_black
-  + percent_hispanic
-  + percent_female
-  
-Final AIC = 3870.06, a drop of ~10.6 units from the full model.\
+
+Best AIC model: cbind(deaths, confirmed - deaths) \~ state + percent_fair_or_poor_health + percent_smokers + percent_excessive_drinking + percent_uninsured + percent_some_college + percent_unemployed + percent_children_in_poverty + percent_single_parent_households + percent_severe_housing_problems + percent_adults_with_diabetes + percent_food_insecure + percent_insufficient_sleep + percent_uninsured_2 + median_household_income + percent_homeowners + population_2 + percent_less_than_18_years_of_age + percent_black + percent_hispanic + percent_female
+
+Final AIC = 3870.06, a drop of \~10.6 units from the full model.\
 
 ### Q1.11 (15pts)
 
-Find the best sub-model using the lasso with cross validation.
-**Solution:**
+Find the best sub-model using the lasso with cross validation. **Solution:**
+
 ```{r}
 library(glmnet)
 
@@ -560,7 +568,9 @@ lasso_results <- data.frame(
 )
 print(lasso_results, row.names = FALSE)
 ```
+
 Since CV lasso selects a model with just the intercept, we can check the coefficients at the next 5 smaller lambdas (more predictors).
+
 ```{r}
 # index of lambda.min on the path 
 k_min <- match(cv_lasso$lambda.min, cv_lasso$glmnet.fit$lambda)
@@ -598,34 +608,126 @@ results_df %>%
 
 ## Q2. Odds ratios (20pts)
 
-Consider a $2 \times 2$ contingency table from a prospective study in which people who were or were not exposed to some pollutant are followed up and, after several years, categorized according to the presense or absence of a disease. Following table shows the probabilities for each cell. The odds of disease for either exposure group is $O_i = \pi_i / (1 - \pi_i)$, for $i = 1,2$, and so the odds ratio is
-$$
+Consider a $2 \times 2$ contingency table from a prospective study in which people who were or were not exposed to some pollutant are followed up and, after several years, categorized according to the presense or absence of a disease. Following table shows the probabilities for each cell. The odds of disease for either exposure group is $O_i = \pi_i / (1 - \pi_i)$, for $i = 1,2$, and so the odds ratio is $$
 \phi = \frac{O_1}{O_2} = \frac{\pi_1(1 - \pi_2)}{\pi_2 (1 - \pi_1)}
-$$
-is a measure of the relative likelihood of disease for the exposed and not exposed groups.
+$$ is a measure of the relative likelihood of disease for the exposed and not exposed groups.
 
 |             | Diseased | Not diseased |
 |:-----------:|----------|--------------|
-| Exposed     | $\pi_1$  | $1 - \pi_1$  |
+|   Exposed   | $\pi_1$  | $1 - \pi_1$  |
 | Not exposed | $\pi_2$  | $1 - \pi_2$  |
 
 ### Q2.1 (10pts)
 
-For the simple logistic model
-$$
+For the simple logistic model $$
 \pi_i = \frac{e^{\beta_i}}{1 + e^{\beta_i}}, 
+$$ show that if there is no difference between the exposed and not exposed groups (i.e., $\beta_1 = \beta_2$), then $\phi = 1$.
+
+**Solution:** 
+
+The odds for group $i$ are  
+
 $$
-show that if there is no difference between the exposed and not exposed groups (i.e., $\beta_1 = \beta_2$), then $\phi = 1$.
+\begin{aligned}
+O_i
+  &= \frac{\pi_i}{1 - \pi_i} \\[4pt]
+  &= \frac{\dfrac{e^{\beta_i}}{1 + e^{\beta_i}}}
+          {1 - \dfrac{e^{\beta_i}}{1 + e^{\beta_i}}} \\[8pt]
+  &= \frac{e^{\beta_i}}{1 + e^{\beta_i}}
+     \,\cdot\,
+     \frac{1 + e^{\beta_i}}{1}
+     \;=\;
+     e^{\beta_i}.
+\end{aligned}
+$$
+
+So the odds-ratio is  
+
+$$
+\phi
+   \;=\;
+   \frac{O_1}{O_2}
+   \;=\;
+   \frac{e^{\beta_1}}{e^{\beta_2}}
+   \;=\;
+   e^{\beta_1 - \beta_2}.
+$$
+
+If $\beta_1 = \beta_2$, then  
+
+$$
+\phi
+  \;=\;
+  e^{\,\beta_1 - \beta_1}
+  \;=\;
+  e^{0}
+  \;=\;
+  1
+$$
+
+
+
+
 
 ### Q2.2(10pts)
 
-Consider $J$ $2 \times 2$ tables, one for each level $x_j$ of a factor, such as age group, with $j=1,\ldots, J$. For the logistic model
-$$
+Consider $J$ $2 \times 2$ tables, one for each level $x_j$ of a factor, such as age group, with $j=1,\ldots, J$. For the logistic model $$
 \pi_{ij} = \frac{e^{\alpha_i + \beta_i x_j}}{1 + e^{\alpha_i + \beta_i x_j}}, \quad i = 1,2, \quad j= 1,\ldots, J.
+$$ Show that $\log \phi$ is constant over all tables if $\beta_1 = \beta_2$.
+
+**Solution:**
+
+Given  
+
 $$
-Show that $\log \phi$ is constant over all tables if $\beta_1 = \beta_2$.
+\pi_{ij} \;=\; \frac{e^{\alpha_i + \beta_i x_j}}{1 + e^{\alpha_i + \beta_i x_j}}
+$$
+
+the odds for group \(i\) at level \(x_j\) are  
+
+$$
+O_{ij}
+  \;=\;
+  \frac{\pi_{ij}}{1 - \pi_{ij}}
+  \;=\;
+  e^{\alpha_i + \beta_i x_j}.
+$$
+
+The odds-ratio for each \(j\) is  
+
+$$
+\phi_j
+  \;=\;
+  \frac{O_{1j}}{O_{2j}}
+  \;=\;
+  \frac{e^{\alpha_1 + \beta_1 x_j}}
+       {e^{\alpha_2 + \beta_2 x_j}}
+  \;=\;
+  e^{(\alpha_1 - \alpha_2) + (\beta_1 - \beta_2)\,x_j}.
+$$
+
+So the log-odds-ratio is  
+
+$$
+\log \phi_j
+  \;=\;
+  (\alpha_1 - \alpha_2)
+  \;+\;
+  (\beta_1 - \beta_2)\,x_j.
+$$
+
+If \(\beta_1 = \beta_2\), then  
+
+$$
+\log \phi_j
+  \;=\;
+  (\alpha_1 - \alpha_2),
+$$
+
+which no longer depends on \(x_j\). We can conclude the log-odds-ratio is **constant** across all \(j\).
 
 ## Q3. ELMR Chapter 4 Excercise 3 (30pts)
+
 The infert dataset presents data from a study of secondary infertility (failure to conceive after at least one previous conception). The factors of interest are induced abortions and spontaneous abortions (e.g., miscarriages). The study matched each case of infertility with two controls who were not infertile, matching on age, education and parity (number of prior pregnancies).\
 (a) Construct cross-classified tables by number of spontaneous and induced abortions separately for cases and controls. Comment on the differences between the two tables.\
 (b) Fit a binary response model with only spontaneous and induced as predictors.\
@@ -637,32 +739,37 @@ Explain how the significance (or lack thereof) of these predictors should be int
 (f) The spontaneous and induced predictors could be viewed as ordinal due to the grouping in the highest level. Refit the model using ordinal factors rather than numerical variables for these two predictors. Is there evidence that the ordinal representation is necessary?\
 
 ### Q3.a
+
 ```{r}
 
 ```
 
 ### Q3.b
+
 ```{r}
 
 ```
 
 ### Q3.c
+
 ```{r}
 
 ```
 
 ### Q3.d
+
 ```{r}
 
 ```
 
 ### Q3.e
+
 ```{r}
 
 ```
 
 ### Q3.f
+
 ```{r}
 
 ```
-
