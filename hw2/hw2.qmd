@@ -727,49 +727,93 @@ $$
 which no longer depends on \(x_j\). We can conclude the log-odds-ratio is **constant** across all \(j\).
 
 ## Q3. ELMR Chapter 4 Excercise 3 (30pts)
-
 The infert dataset presents data from a study of secondary infertility (failure to conceive after at least one previous conception). The factors of interest are induced abortions and spontaneous abortions (e.g., miscarriages). The study matched each case of infertility with two controls who were not infertile, matching on age, education and parity (number of prior pregnancies).\
-(a) Construct cross-classified tables by number of spontaneous and induced abortions separately for cases and controls. Comment on the differences between the two tables.\
-(b) Fit a binary response model with only spontaneous and induced as predictors.\
+
+### Q3(a) Construct cross-classified tables by number of spontaneous and induced abortions separately for cases and controls. Comment on the differences between the two tables.\
+```{r}
+library(tidyverse)     
+library(broom)         
+library(survival)     
+
+data(infert, package = "datasets")   
+glimpse(infert)
+
+# Nicer labels
+infert <- infert %>% 
+  mutate(case_lbl = if_else(case == 1, "Case (infertile)", "Control"))
+
+
+# Cross-tab for spontaneous abortions
+table_spont <- with(infert, table(case_lbl, spontaneous))
+table_induc <- with(infert, table(case_lbl, induced))
+
+table_spont
+table_induc
+
+prop.table(table_spont, margin = 1) 
+prop.table(table_induc, margin = 1)
+
+```
+Spontaneous abortions:\
+Among infertile cases the percentages are roughly split with 0 abortions ≈ 34 %, 1 ≈ 37 %, 2 ≈ 29 %.\
+Among controls most women ≈ 68 % report zero spontaneous abortions, and only 7 % report two.
+a history of more spontaneous abortions is noticeably more common in cases than controls, suggesting a possible association with infertility.\
+Induced abortions:\
+The share with zero induced abortions is similar in both groups (~57 %), but the case group shows slightly higher proportions at 1 and 2 induced abortions.\
+Induced abortions may still matter, but the contrast is weaker than for spontaneous abortions.\
+  
+  
+### Q3(b) Fit a binary response model with only spontaneous and induced as predictors.\
 Determine the statistical significance of these predictors. Express the effects of the predictors in terms of odds.\
-(c) Fit a binary response model with only education, age and parity as predictors.\
+```{r}
+mod_b <- glm(case ~ spontaneous + induced, family = binomial, data = infert)
+tidy(mod_b, exponentiate = TRUE, conf.int = TRUE)
+```
+Both variables are significant; the effect of spontaneous abortions is more than twice as strong as that of induced abortions.\
+
+### Q3(c) Fit a binary response model with only education, age and parity as predictors.\
 Explain how the significance (or lack thereof) of these predictors should be interpreted.\
-(d) Now put all five predictors in a binary response model. Interpret the results in terms of odds.\
-(e) Fit a matched case control model appropriate to the data. Interpret the output and compare the odds to those found in the previous model.\
-(f) The spontaneous and induced predictors could be viewed as ordinal due to the grouping in the highest level. Refit the model using ordinal factors rather than numerical variables for these two predictors. Is there evidence that the ordinal representation is necessary?\
-
-### Q3.a
-
 ```{r}
+mod_c <- glm(case ~ education + age + parity, family = binomial, data = infert)
+tidy(mod_c, exponentiate = TRUE, conf.int = TRUE)
+```
+None of the three predictors are statistically significant. The estimated ORs are close to 1, with very wide CIs that include the null value. This is what we expect: age, education and parity were the matching variables, so their marginal associations with case status are purposely minimized after matching.\
+
+
+### Q3(d) Now put all five predictors in a binary response model. Interpret the results in terms of odds.\
+```{r}
+mod_d <- glm(case ~ spontaneous + induced + education + age + parity,
+             family = binomial, data = infert)
+tidy(mod_d, exponentiate = TRUE, conf.int = TRUE)
+```
+Each extra spontaneous abortion increases the odds of infertility by about 7.7 × after adjusting for the other covariates.\
+Each extra induced abortion triples the odds.\
+More previous pregnancies reduce the odds. Every additional pregnancy roughly halves the odds.\
+Adjustment makes the abortion effects even stronger, while parity now clearly shows an inverse relationship with infertility risk.\
+
+### Q3(e) Fit a matched case control model appropriate to the data. Interpret the output and compare the odds to those found in the previous model.\
+```{r}
+mod_e <- clogit(case ~ spontaneous + induced + education + age + parity +
+                  strata(stratum), data = infert)
+tidy(mod_e, exponentiate = TRUE, conf.int = TRUE)
 
 ```
+The values and direction are very close to the full ordinary model, which further supports the conclusion that both types of abortions are strongly associated with secondary infertility. Matching variables drop out because their effects are absorbed by the stratum terms.\
 
-### Q3.b
-
+### Q3(f) The spontaneous and induced predictors could be viewed as ordinal due to the grouping in the highest level. Refit the model using ordinal factors rather than numerical variables for these two predictors. Is there evidence that the ordinal representation is necessary?\
 ```{r}
+infert_ord <- infert %>% 
+  mutate(spontaneousF = factor(spontaneous, ordered = TRUE),
+         inducedF     = factor(induced,      ordered = TRUE))
 
+mod_f <- glm(case ~ spontaneousF + inducedF + education + age + parity,
+             family = binomial, data = infert_ord)
+tidy(mod_f)
+
+# Compare using a likelihood-ratio test
+anova(mod_d, mod_f, test = "LRT")
+
+# Compare AIC
+AIC(mod_d, mod_f)
 ```
-
-### Q3.c
-
-```{r}
-
-```
-
-### Q3.d
-
-```{r}
-
-```
-
-### Q3.e
-
-```{r}
-
-```
-
-### Q3.f
-
-```{r}
-
-```
+A likelihood-ratio test comparing the ordinal-factor model to the simpler numeric-score model yields Deviance = 0.013 on 2 df with p-value = 0.9936, and the AIC is slightly worse (275.8 vs 271.8). Therefore, there is no evidence that the extra flexibility of treating the variables as ordered factors improves fit, so the simple linear representation is the better option. 
