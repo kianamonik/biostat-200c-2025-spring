@@ -243,18 +243,30 @@ The predicted Poisson mean for the last person in the dataset is 0.152. Based on
 
 (g) (10pts)\
 Tabulate the frequencies of the number of doctor visits. Compute the expected
-frequencies of doctor visits under your most recent model. Compare the ob-
-served with the expected frequencies and comment on whether it is worth fitting a zero-inflated count model.
+frequencies of doctor visits under your most recent model. Compare the observed with the expected frequencies and comment on whether it is worth fitting a zero-inflated count model.
 ```{r}
+# Observed Frequencies
+table(dvisits$doctorco)
 
+# Expected Frequencies
+lambda_all <- predict(step_model, type = "response")
+
+expected_counts <- sapply(0:9, function(k) sum(dpois(k, lambda_all)))
+names(expected_counts) <- 0:9
+round(expected_counts, 1)
+
+# Number of zeros in observed vs. expected
+obs_zeros <- sum(dvisits$doctorco == 0)
+exp_zeros <- round(expected_counts["0"], 1)
+
+cat("Observed zeros:", obs_zeros, "\n")
+cat("Expected zeros:", exp_zeros, "\n")
 ```
 
 (h) (15pts)\
 Fit a comparable (Gaussian) linear model and graphically compare the fits.
 Describe how they differ.
-```{r}
 
-```
 
  
 ## Q4. Uniform association (20pts)
