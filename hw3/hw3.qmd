@@ -154,16 +154,8 @@ dvisits$doctorco_plot <- factor(dvisits$doctorco_plot,
                                 levels = 0:5, 
                                 labels = c("0", "1", "2", "3", "4", "5+"))
 
-# Plot: Count of doctor visits within each chronic condition group
-ggplot(dvisits, aes(x = doctorco_plot, fill = cond)) +
-  geom_bar(position = "dodge") +
-  labs(title = "Doctor Visit Frequencies by Chronic Condition Status",
-       x = "Number of Doctor Visits",
-       y = "Count of People",
-       fill = "Chronic Condition") +
-  theme_minimal()
 
-# Side-by-side boxplots (do NOT use capped factor variable here)
+# Side-by-side boxplots 
 ggplot(dvisits, aes(x = cond, y = doctorco)) +
   geom_boxplot(fill = "lightblue") +
   scale_y_continuous(breaks = 0:6, labels = c("0", "1", "2", "3", "4", "5",
@@ -174,6 +166,8 @@ ggplot(dvisits, aes(x = cond, y = doctorco)) +
   theme_minimal()
 
 ```
+In the boxplot, individuals with no chronic conditions or with chronic conditions without activity limitation have nearly identical distributions, with almost all visits clustered at zero. In contrast, individuals with chronic conditions that limit activity show a visibly higher spread, with a greater number of visits and several high outliers. This could suggest that activity limiting chronic conditions are strongly associated with increased healthcare utilization.\
+
 
 (c) (10pts)\
 Build a Poisson regression model with doctorco as the response and sex, age, agesq, income, levyplus, freepoor, freerepa, illness, actdays, hscore and the three-level condition factor as possible predictor variables. Considering the deviance of this model, does this model fit the data?
@@ -266,8 +260,26 @@ cat("Expected zeros:", exp_zeros, "\n")
 (h) (15pts)\
 Fit a comparable (Gaussian) linear model and graphically compare the fits.
 Describe how they differ.
+```{r}
+# Gaussian linear model
+lm_model <- lm(doctorco ~ sex + age + income + levyplus + freepoor +
+               illness + actdays + hscore + cond, data = dvisits)
+
+summary(lm_model)
 
 
+par(mfrow = c(1, 2))
+
+# Plot Poisson model fit
+plot(full_model$fitted.values, resid(full_model), xlab = "Fitted Values",
+     ylab = "Residuals", main = "Poisson Model")
+
+# Plot Gaussian model fit
+plot(lm_model$fitted.values, resid(lm_model), xlab = "Fitted Values",
+     ylab = "Residuals", main = "Gaussian Model")
+
+```
+Sex and age are no longer statistically significant in the Gaussian model, while they were in the Poisson model. While both models produced similar patterns in predicted values, the linear model assumes normally distributed errors and constant variance, which are inappropriate for count data like doctor visits.\
  
 ## Q4. Uniform association (20pts)
 
