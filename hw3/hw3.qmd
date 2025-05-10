@@ -123,12 +123,54 @@ dvisits %>%
 
 (b) (5pts)\
 Combine the predictors chcond1 and chcond2 into a single three-level factor. Make an appropriate plot showing the relationship between this factor and the response. Comment.
+```{r}
+dvisits$cond <- with(dvisits,
+                     ifelse(chcond1 == 0 & chcond2 == 0, "none",
+                     ifelse(chcond1 == 1 & chcond2 == 0, "no_limited_activity",
+                     ifelse(chcond1 == 0 & chcond2 == 1, "limited_activity", NA))))
 
+# Turn into a factor with proper ordering
+dvisits$cond <- factor(dvisits$cond,
+                       levels = c("none", "no_limited_activity", "limited_activity"))
+
+
+dvisits$cond <- factor(dvisits$cond, 
+                       levels = c("none", "no_limited_activity", "limited_activity"))
+
+
+library(ggplot2)
+library(dplyr)
+
+# Cap doctorco at 5+ for clean y-axis categories
+dvisits$doctorco_plot <- ifelse(dvisits$doctorco >= 5, 5, dvisits$doctorco)
+dvisits$doctorco_plot <- factor(dvisits$doctorco_plot, 
+                                levels = 0:5, 
+                                labels = c("0", "1", "2", "3", "4", "5+"))
+
+# Plot: Count of doctor visits within each chronic condition group
+ggplot(dvisits, aes(x = doctorco_plot, fill = cond)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Doctor Visit Frequencies by Chronic Condition Status",
+       x = "Number of Doctor Visits",
+       y = "Count of People",
+       fill = "Chronic Condition") +
+  theme_minimal()
+
+# Side-by-side boxplots (do NOT use capped factor variable here)
+ggplot(dvisits, aes(x = cond, y = doctorco)) +
+  geom_boxplot(fill = "lightblue") +
+  scale_y_continuous(breaks = 0:6, labels = c("0", "1", "2", "3", "4", "5", "5+")) +
+  labs(title = "Distribution of Doctor Visits by Chronic Condition Status",
+       x = "Chronic Condition",
+       y = "Number of Doctor Visits") +
+  theme_minimal()
+
+```
 
 (c) (10pts)\
-Build a Poisson regression model with doctorco as the response and sex,
-age, agesq, income, levyplus, freepoor, freerepa, illness, actdays,
-hscore and the three-level condition factor as possible predictor variables. Considering the deviance of this model, does this model fit the data?
+Build a Poisson regression model with doctorco as the response and sex, age, agesq, income, levyplus, freepoor, freerepa, illness, actdays, hscore and the three-level condition factor as possible predictor variables. Considering the deviance of this model, does this model fit the data?
+
+
 (d) (10pts)\
 Plot the residuals and the fitted values — why are there lines of observations on the plot? Make a QQ plot of the residuals and comment
 (e) (10pts)\
