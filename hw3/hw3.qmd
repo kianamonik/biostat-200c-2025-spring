@@ -179,13 +179,22 @@ full_model <- glm(doctorco ~ sex + age + agesq + income + levyplus +
 summary(full_model)
 
 pchisq(full_model$deviance, full_model$df.residual, lower = FALSE)
-
 ```
 
-The deviance goodness-of-fit test returned a p-value of 1, indicating that the residual deviance is much smaller than expected under the Poisson model. This suggests no evidence of lack of fit. However, such a high p-value may also signal underdispersion or possible overfitting.
+The deviance goodness-of-fit test returned a p-value of 1, indicating that the residual deviance is much smaller than expected under the Poisson model. This suggests no evidence of lack of fit. However, such a high p-value may also signal underdispersion or possible overfitting.\
 
 (d) (10pts)\
 Plot the residuals and the fitted values — why are there lines of observations on the plot? Make a QQ plot of the residuals and comment
+```{r}
+plot(full_model$fitted.values, resid(full_model), xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs. Fitted Values")
+
+# QQ plot of residuals
+qqnorm(resid(full_model))
+qqline(resid(full_model))
+```
+The residuals vs. fitted values plot shows multiple horizontal bands which is expected for count data like doctorco, since it only takes integer values. There's a slight increase in residual variance at higher fitted values, which could suggest mild overdispersion or that variance increases with the mean which is common in Poisson data.\
+The QQ plot of deviance residuals shows some deviation from normality, especially in the upper tail. While this is expected with count data and Poisson regression, it suggests that the model may not fully capture the distribution of the data.\
+
 (e) (10pts)\
 Use a stepwise AIC-based model selection method. What sort of person would
 be predicted to visit the doctor the most under your selected model?
