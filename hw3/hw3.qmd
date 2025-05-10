@@ -77,13 +77,15 @@ library(dplyr)
 # Dividing age into groups for better visualization
 dvisits <- dvisits %>%
   mutate(age_group = cut(age*100, breaks = c(15, 25, 35, 45, 55, 65, 75),
-                         labels = c("15-24", "25-34", "35-44", "45-54", "55-64", "65+")))
+                         labels = c("15-24", "25-34", "35-44", "45-54", "55-64",
+                                    "65+")))
 
 # Scatter plot: doctorco vs. age_group
 dvisits <- dvisits %>%
   mutate(
     doctorco_plot = ifelse(doctorco >= 5, 5, doctorco),
-    doctorco_plot = factor(doctorco_plot, levels = 0:5, labels = c("0", "1", "2", "3", "4", "5+"))
+    doctorco_plot = factor(doctorco_plot, levels = 0:5,
+                           labels = c("0", "1", "2", "3", "4", "5+"))
   )
 
 ggplot(dvisits, aes(x = age_group, y = doctorco_plot)) +
@@ -108,7 +110,8 @@ dvisits %>%
   summarise(avg_doctorco = mean(doctorco)) %>%
   ggplot(aes(x = age_group, y = avg_doctorco)) +
   geom_col(fill = "skyblue") +
-  labs(title = "Average Doctor Visits by Age Group", x = "Age Group", y = "Average Doctor Visits")
+  labs(title = "Average Doctor Visits by Age Group", x = "Age Group",
+       y = "Average Doctor Visits")
 
 # Bar plot of mean doctorco by illness count
 dvisits %>%
@@ -116,7 +119,8 @@ dvisits %>%
   summarise(mean_doctorco = mean(doctorco)) %>%
   ggplot(aes(x = factor(illness), y = mean_doctorco)) +
   geom_col(fill = "darkorange") +
-  labs(title = "Average Doctor Visits by Illness Count", x = "Number of Illnesses", y = "Average Doctor Visits")
+  labs(title = "Average Doctor Visits by Illness Count",
+       x = "Number of Illnesses", y = "Average Doctor Visits")
 
 
 ```
@@ -127,15 +131,18 @@ Combine the predictors chcond1 and chcond2 into a single three-level factor. Mak
 dvisits$cond <- with(dvisits,
                      ifelse(chcond1 == 0 & chcond2 == 0, "none",
                      ifelse(chcond1 == 1 & chcond2 == 0, "no_limited_activity",
-                     ifelse(chcond1 == 0 & chcond2 == 1, "limited_activity", NA))))
+                     ifelse(chcond1 == 0 & chcond2 == 1, "limited_activity",
+                            NA))))
 
 # Turn into a factor with proper ordering
 dvisits$cond <- factor(dvisits$cond,
-                       levels = c("none", "no_limited_activity", "limited_activity"))
+                       levels = c("none", "no_limited_activity",
+                                  "limited_activity"))
 
 
 dvisits$cond <- factor(dvisits$cond, 
-                       levels = c("none", "no_limited_activity", "limited_activity"))
+                       levels = c("none", "no_limited_activity",
+                                  "limited_activity"))
 
 
 library(ggplot2)
@@ -159,7 +166,8 @@ ggplot(dvisits, aes(x = doctorco_plot, fill = cond)) +
 # Side-by-side boxplots (do NOT use capped factor variable here)
 ggplot(dvisits, aes(x = cond, y = doctorco)) +
   geom_boxplot(fill = "lightblue") +
-  scale_y_continuous(breaks = 0:6, labels = c("0", "1", "2", "3", "4", "5", "5+")) +
+  scale_y_continuous(breaks = 0:6, labels = c("0", "1", "2", "3", "4", "5",
+                                              "5+")) +
   labs(title = "Distribution of Doctor Visits by Chronic Condition Status",
        x = "Chronic Condition",
        y = "Number of Doctor Visits") +
@@ -186,7 +194,8 @@ The deviance goodness-of-fit test returned a p-value of 1, indicating that the r
 (d) (10pts)\
 Plot the residuals and the fitted values — why are there lines of observations on the plot? Make a QQ plot of the residuals and comment
 ```{r}
-plot(full_model$fitted.values, resid(full_model), xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs. Fitted Values")
+plot(full_model$fitted.values, resid(full_model), xlab = "Fitted Values",
+     ylab = "Residuals", main = "Residuals vs. Fitted Values")
 
 # QQ plot of residuals
 qqnorm(resid(full_model))
@@ -205,23 +214,48 @@ summary(step_model)
 # Predict for all people
 dvisits$predicted_visits <- predict(step_model, type = "response")
 
-# View top predicted individual(s)
+# View top predicted individual
 top_person <- dvisits[which.max(dvisits$predicted_visits), ]
 top_person
-
 ```
 The strongest predictors of increased doctor visits were a higher number of recent illnesses, more days of activity limitation due to illness or injury, and a higher score in the health questionaire (high score indicates bad health) (hscore). Being female, older, and having a chronic condition (especially one that limits activity) were also associated with higher predicted visit counts. However, higher income was associated with fewer doctor visits, and being covered under government care due to low income (freepoor) was also negatively associated. Overall, the person predicted to visit the doctor the most would be someone who is female, older, in poor health (high illness count, high actdays, high hscore), and has a chronic condition that limits activity.\
 
 (f) (5pts)\
 For the last person in the dataset, compute the predicted probability distribution for their visits to the doctor, i.e., give the probability they visit 0, 1, 2, etc. times.
+```{r}
+# Extract the last person
+last_person <- dvisits[nrow(dvisits), ]
+
+# Predicted mean (lambda) for Poisson distribution
+lambda_hat <- predict(step_model, newdata = last_person, type = "response")
+lambda_hat
+
+# Values from 0 to 9 visits
+k_vals <- 0:9
+probs <- dpois(k_vals, lambda_hat)
+
+# Create a data frame
+prob_table <- data.frame(Visits = k_vals, Probability = round(probs, 4))
+print(prob_table)
+```
+
+The predicted Poisson mean for the last person in the dataset is 0.152. Based on this, the most likely outcome is 0 visits, with approximately 86% probability. There's about a 13% chance of 1 visit, and the probability of more than 2 visits is nearly negligible. This reflects a low expected rate of healthcare utilization for this individual under the fitted model.\
+
 (g) (10pts)\
 Tabulate the frequencies of the number of doctor visits. Compute the expected
 frequencies of doctor visits under your most recent model. Compare the ob-
 served with the expected frequencies and comment on whether it is worth fitting a zero-inflated count model.
+```{r}
+
+```
+
 (h) (15pts)\
 Fit a comparable (Gaussian) linear model and graphically compare the fits.
 Describe how they differ.
- 
+```{r}
+
+```
+
  
 ## Q4. Uniform association (20pts)
 
