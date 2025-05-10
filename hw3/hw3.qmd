@@ -169,7 +169,20 @@ ggplot(dvisits, aes(x = cond, y = doctorco)) +
 
 (c) (10pts)\
 Build a Poisson regression model with doctorco as the response and sex, age, agesq, income, levyplus, freepoor, freerepa, illness, actdays, hscore and the three-level condition factor as possible predictor variables. Considering the deviance of this model, does this model fit the data?
+```{r}
+dvisits$agesq <- dvisits$age^2
 
+full_model <- glm(doctorco ~ sex + age + agesq + income + levyplus + 
+                  freepoor + freerepa + illness + actdays + hscore + cond, 
+                  data = dvisits, family = poisson)
+
+summary(full_model)
+
+pchisq(full_model$deviance, full_model$df.residual, lower = FALSE)
+
+```
+
+The deviance goodness-of-fit test returned a p-value of 1, indicating that the residual deviance is much smaller than expected under the Poisson model. This suggests no evidence of lack of fit. However, such a high p-value may also signal underdispersion or possible overfitting.
 
 (d) (10pts)\
 Plot the residuals and the fitted values — why are there lines of observations on the plot? Make a QQ plot of the residuals and comment
