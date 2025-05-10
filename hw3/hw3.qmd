@@ -198,6 +198,20 @@ The QQ plot of deviance residuals shows some deviation from normality, especiall
 (e) (10pts)\
 Use a stepwise AIC-based model selection method. What sort of person would
 be predicted to visit the doctor the most under your selected model?
+```{r}
+step_model <- step(full_model, direction = "both")
+summary(step_model)
+
+# Predict for all people
+dvisits$predicted_visits <- predict(step_model, type = "response")
+
+# View top predicted individual(s)
+top_person <- dvisits[which.max(dvisits$predicted_visits), ]
+top_person
+
+```
+The strongest predictors of increased doctor visits were a higher number of recent illnesses, more days of activity limitation due to illness or injury, and a higher score in the health questionaire (high score indicates bad health) (hscore). Being female, older, and having a chronic condition (especially one that limits activity) were also associated with higher predicted visit counts. However, higher income was associated with fewer doctor visits, and being covered under government care due to low income (freepoor) was also negatively associated. Overall, the person predicted to visit the doctor the most would be someone who is female, older, in poor health (high illness count, high actdays, high hscore), and has a chronic condition that limits activity.\
+
 (f) (5pts)\
 For the last person in the dataset, compute the predicted probability distribution for their visits to the doctor, i.e., give the probability they visit 0, 1, 2, etc. times.
 (g) (10pts)\
