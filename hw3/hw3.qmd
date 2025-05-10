@@ -1,26 +1,161 @@
 ---
-title: "hw3"
-format: pdf
-editor: visual
+title: "Biostat 200C Homework 3"
+subtitle: Due May 9 @ 11:59PM
+date: today
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+engine: knitr
+knitr:
+  opts_chunk: 
+    fig.align: 'center'
+    # fig.width: 6
+    # fig.height: 4
+    message: FALSE
+    cache: false
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = FALSE)
 ```
 
-You can add options to executable code like this
+To submit homework, please upload both Rmd and html files to Bruinlearn by the deadline.
 
+## Q1. Concavity of Poisson regression log-likelihood (50pts)
+
+Let $Y_1,\ldots,Y_n$ be independent random variables with $Y_i \sim \text{Poisson}(\mu_i)$ and $\log \mu_i = \mathbf{x}_i^T \boldsymbol{\beta}$, $i = 1,\ldots,n$.
+
+### Q1.1 (10pts)
+
+Write down the log-likelihood function.
+
+### Q1.2 (10pts)
+
+Derive the gradient vector and Hessian matrix of the log-likelihood function with respect to the regression coefficients $\boldsymbol{\beta}$. 
+
+### Q1.3 (20pts)
+
+Show that the log-likelihood function of the log-linear model is a concave function in regression coefficients $\boldsymbol{\beta}$. (Hint: show that the negative Hessian is a positive semidefinite matrix.)
+
+### Q1.4 (10pts)
+
+Show that for the fitted values $\widehat{\mu}_i$ from maximum likelihood estimates
+$$
+\sum_i \widehat{\mu}_i = \sum_i y_i.
+$$
+Therefore the deviance reduces to
+$$
+D = 2 \sum_i y_i \log \frac{y_i}{\widehat{\mu}_i}.
+$$
+
+## Q2. Show negative binomial distribution mean and variance (20pts)
+
+Recall the probability mass function of negative binomial distribution is 
+$$
+\mathbb{P}(Y = y) = \binom{y + r - 1}{r - 1} (1 - p)^r p^y, \quad y = 0, 1, \ldots
+$$
+Show $\mathbb{E}Y = \mu = rp / (1 - p)$ and $\operatorname{Var} Y = r p / (1 - p)^2$.
+
+## Q3. ELMR Chapter 5 Exercise 5 (page 100) (70pts)
+The dvisits data comes from the Australian Health Survey of 1977–1978 and
+consist of 5190 single adults where young and old have been oversampled.\
+(a) (5pts)\
+Make plots which show the relationship between the response variable, doctorco, and the potential predictors, age and illness.
 ```{r}
-#| echo: false
-2 * 2
+library(faraway)
+library(ggplot2)
+data(dvisits)
+
+library(dplyr)
+
+# Dividing age into groups for better visualization
+dvisits <- dvisits %>%
+  mutate(age_group = cut(age*100, breaks = c(15, 25, 35, 45, 55, 65, 75),
+                         labels = c("15-24", "25-34", "35-44", "45-54", "55-64", "65+")))
+
+# Scatter plot: doctorco vs. age_group
+dvisits <- dvisits %>%
+  mutate(
+    doctorco_plot = ifelse(doctorco >= 5, 5, doctorco),
+    doctorco_plot = factor(doctorco_plot, levels = 0:5, labels = c("0", "1", "2", "3", "4", "5+"))
+  )
+
+ggplot(dvisits, aes(x = age_group, y = doctorco_plot)) +
+  geom_jitter(width = 0.2, height = 0.1, alpha = 0.3) +
+  scale_y_discrete(limits = c("0", "1", "2", "3", "4", "5+")) +
+  labs(title = "Doctor Visits by Age Group",
+       x = "Age Group",
+       y = "Number of Doctor Visits (0–5+)")
+
+# Scatter plot: doctorco vs. illness
+ggplot(dvisits, aes(x = factor(illness), y = doctorco_plot)) +
+  geom_jitter(width = 0.2, height = 0.1, alpha = 0.3) +
+  scale_y_discrete(limits = c("0", "1", "2", "3", "4", "5+")) +
+  labs(title = "Doctor Visits by Number of Illnesses",
+       x = "Illness Count (Past 2 Weeks)",
+       y = "Number of Doctor Visits (0–5+)")
+
+
+# Bar plot of average doctor visits by age group
+dvisits %>%
+  group_by(age_group) %>%
+  summarise(avg_doctorco = mean(doctorco)) %>%
+  ggplot(aes(x = age_group, y = avg_doctorco)) +
+  geom_col(fill = "skyblue") +
+  labs(title = "Average Doctor Visits by Age Group", x = "Age Group", y = "Average Doctor Visits")
+
+# Bar plot of mean doctorco by illness count
+dvisits %>%
+  group_by(illness) %>%
+  summarise(mean_doctorco = mean(doctorco)) %>%
+  ggplot(aes(x = factor(illness), y = mean_doctorco)) +
+  geom_col(fill = "darkorange") +
+  labs(title = "Average Doctor Visits by Illness Count", x = "Number of Illnesses", y = "Average Doctor Visits")
+
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+(b) (5pts)\
+Combine the predictors chcond1 and chcond2 into a single three-level factor. Make an appropriate plot showing the relationship between this factor and the response. Comment.
+
+
+(c) (10pts)\
+Build a Poisson regression model with doctorco as the response and sex,
+age, agesq, income, levyplus, freepoor, freerepa, illness, actdays,
+hscore and the three-level condition factor as possible predictor variables. Considering the deviance of this model, does this model fit the data?
+(d) (10pts)\
+Plot the residuals and the fitted values — why are there lines of observations on the plot? Make a QQ plot of the residuals and comment
+(e) (10pts)\
+Use a stepwise AIC-based model selection method. What sort of person would
+be predicted to visit the doctor the most under your selected model?
+(f) (5pts)\
+For the last person in the dataset, compute the predicted probability distribution for their visits to the doctor, i.e., give the probability they visit 0, 1, 2, etc. times.
+(g) (10pts)\
+Tabulate the frequencies of the number of doctor visits. Compute the expected
+frequencies of doctor visits under your most recent model. Compare the ob-
+served with the expected frequencies and comment on whether it is worth fitting a zero-inflated count model.
+(h) (15pts)\
+Fit a comparable (Gaussian) linear model and graphically compare the fits.
+Describe how they differ.
+ 
+ 
+## Q4. Uniform association (20pts)
+
+For the uniform association when all two-way interactions are included, i.e., 
+$$
+\log \mathbb{E}Y_{ijk} = \log p_{ijk} = \log n + \log p_i + \log p_j + \log p_k + \log p_{ij} + \log p_{ik} + \log p_{jk}.
+$$
+
+Proof the odds ratio (or log of odds ratio) across all stratum $k$ 
+$$
+\log \frac{\mathbb{E}Y_{11k}\mathbb{E}Y_{22k}}{\mathbb{E}Y_{12k}\mathbb{E}Y_{21k}}
+$$
+
+is a constant, i.e., the estimated effect of the interaction term "i:j" in the uniform association model 
+
