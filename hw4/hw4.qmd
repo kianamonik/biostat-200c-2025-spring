@@ -45,10 +45,33 @@ ggplot(debt, aes(x = incomegp, fill = ccarduse)) +
 # Table showing the relationship between 'ccarduse' and 'incomegp'
 table(debt$ccarduse, debt$incomegp)
 ```
+In the box plots, the median pro-debt score increases as card use increases. Individuals who regularly use credit cards tend to have higher pro-debt scores, indicating a more positive attitude toward debt which supports the idea that attitude toward debt is positively associated with credit card usage frequency.\
+As income increases, the proportion of regular credit card users increases, and the proportion of non-users decreases. Income group 1 (lowest) has the highest proportion of “never” users, while income group 5 (highest) has the highest proportion of “regular” users. This suggests a positive association between income and frequency of credit card use.
+
 
 ### b
-
 Fit a proportional odds model for credit card use with all the other variables as predictors. What are the two most significant predictors (largest t-values) and what is their qualitative effect on the response? What is the least significant predictor?
+```{r}
+library(MASS)
+
+# Fit the proportional odds model
+model_full <- polr(ccarduse ~ incomegp + house + children + singpar + agegp + bankacc + bsocacc + manage + cigbuy + xmasbuy + locintrn + prodebt, data = debt, Hess = TRUE, na.action = na.omit)
+
+# Summary of the model
+summary(model_full)
+
+# Calculate p-values
+ctable <- coef(summary(model_full))
+p_values <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p_values)
+ctable[order(abs(ctable[, "t value"]), decreasing = TRUE), ]
+```
+ The two most significant predictors were income group and having a bank account. Higher income levels were associated with greater odds of using credit cards more frequently. Similarly, individuals with a bank account were more likely to use credit cards. The least significant predictor was housing tenure, which showed no meaningful relationship with credit card use frequency in this model.
+ 
+
+### c
+
+Fit a proportional odds model using only the least significant predictor from the previous model. What is the significance of this predictor in this small model? Are the conclusions regarding this predictor contradictory for the two models?
 
 
 ## Q5
