@@ -90,28 +90,61 @@ The contradiction could be because, in the full model, the effect of housing may
 
 Use stepwise AIC to select a smaller model than the full set of predictors. You will need to handle the missing values carefully. Report on the qualitative effect of the predictors in your chosen model. Can we conclude that the predictors that were dropped from the model have no relation to the response?
 ```{r}
-# Drop rows with missing values used in the full model
-debt_clean <- na.omit(debt[, c("ccarduse", "incomegp", "house", "children", "singpar", 
-                               "agegp", "bankacc", "bsocacc", "manage", "cigbuy", 
-                               "xmasbuy", "locintrn", "prodebt")])
+library(mice)
 
-# Refit full model on cleaned data
-model_full_clean <- polr(ccarduse ~ ., data = debt_clean, Hess = TRUE)
+# Select relevant columns
+vars <- c("ccarduse", "incomegp", "house", "children", "singpar", 
+          "agegp", "bankacc", "bsocacc", "manage", "cigbuy", 
+          "xmasbuy", "locintrn", "prodebt")
 
-# Stepwise model selection
-library(MASS)
-model_step <- stepAIC(model_full_clean, direction = "both")
+# Subset the data
+debt_sub <- debt[, vars]
 
-# Summary
-summary(model_step)
+# Impute missing data using mice
+set.seed(123)
+imputed_data <- mice(debt_sub, m = 1, method = "pmm", maxit = 10)
+
+debt_imputed <- complete(imputed_data)
+
+# Fit model and run stepwise selection
+model_full_imputed <- polr(ccarduse ~ ., data = debt_imputed, Hess = TRUE)
+model_step_imputed <- stepAIC(model_full_imputed, direction = "both", trace = FALSE)
+summary(model_step_imputed)
 ```
-The final model has six predictors: income group, age group, bank account status, building society account, cigarette buying, and attitude toward debt. Higher income, older age, having a bank or building society account, and a favorable attitude toward debt were all associated with more frequent credit card use. In contrast, cigarette buyers were less likely to use credit cards. Although some predictors were dropped during model selection, this does not imply they have no relationship with the response. It only means that they did not improve model fit beyond the retained variables.
+The final model retained six predictors: income group, age group, bank account status, ability to manage finances, cigarette buying, and pro-debt attitude. Higher income, older age, having a bank account, and stronger pro-debt attitudes were associated with more frequent credit card use. In contrast, cigarette buyers were less likely to use credit cards. Although some predictors were dropped. This does not imply they have no relationship with the response. It only means that they did not improve model fit beyond the retained variables.
 
 
 ### e
 
 Compute the median values of the predictors in your selected model. At these median values, contrast the predicted outcome probabilities for both smokers and nonsmokers.
+```{r}
+library(dplyr)
 
+med_values <- tibble(
+  incomegp = median(debt_imputed$incomegp, na.rm = TRUE),
+  agegp    = median(debt_imputed$agegp,    na.rm = TRUE),
+  bankacc  = as.numeric(names(which.max(table(debt_imputed$bankacc)))),
+  manage   = median(debt_imputed$manage,   na.rm = TRUE),
+  prodebt  = median(debt_imputed$prodebt,  na.rm = TRUE)
+)
+
+new_data <- bind_rows(
+  mutate(med_values, cigbuy = 1),
+  mutate(med_values, cigbuy = 0)
+)
+
+# Predict
+predicted_probs <- predict(model_step_imputed, newdata = new_data, type = "probs")
+rownames(predicted_probs) <- c("Smoker (cigbuy=1)", "Non-smoker (cigbuy=0)")
+print(round(predicted_probs, 4))
+```
+
+
+### f
+
+Fit a proportional hazards model to the same set of predictors and recompute
+the two sets of probabilities from the previous question. Does it make a differ-
+ence to use this type of model?
 
 ## Q5
 
