@@ -89,6 +89,28 @@ The contradiction could be because, in the full model, the effect of housing may
 ### d
 
 Use stepwise AIC to select a smaller model than the full set of predictors. You will need to handle the missing values carefully. Report on the qualitative effect of the predictors in your chosen model. Can we conclude that the predictors that were dropped from the model have no relation to the response?
+```{r}
+# Drop rows with missing values used in the full model
+debt_clean <- na.omit(debt[, c("ccarduse", "incomegp", "house", "children", "singpar", 
+                               "agegp", "bankacc", "bsocacc", "manage", "cigbuy", 
+                               "xmasbuy", "locintrn", "prodebt")])
+
+# Refit full model on cleaned data
+model_full_clean <- polr(ccarduse ~ ., data = debt_clean, Hess = TRUE)
+
+# Stepwise model selection
+library(MASS)
+model_step <- stepAIC(model_full_clean, direction = "both")
+
+# Summary
+summary(model_step)
+```
+The final model has six predictors: income group, age group, bank account status, building society account, cigarette buying, and attitude toward debt. Higher income, older age, having a bank or building society account, and a favorable attitude toward debt were all associated with more frequent credit card use. In contrast, cigarette buyers were less likely to use credit cards. Although some predictors were dropped during model selection, this does not imply they have no relationship with the response. It only means that they did not improve model fit beyond the retained variables.
+
+
+### e
+
+Compute the median values of the predictors in your selected model. At these median values, contrast the predicted outcome probabilities for both smokers and nonsmokers.
 
 
 ## Q5
