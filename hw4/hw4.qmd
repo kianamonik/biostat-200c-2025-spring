@@ -72,6 +72,23 @@ ctable[order(abs(ctable[, "t value"]), decreasing = TRUE), ]
 ### c
 
 Fit a proportional odds model using only the least significant predictor from the previous model. What is the significance of this predictor in this small model? Are the conclusions regarding this predictor contradictory for the two models?
+```{r}
+model_small <- polr(ccarduse ~ house, data = debt, Hess = TRUE, na.action = na.omit)
+
+# Summary of the model
+summary(model_small)
+
+# Calculate p-value
+ctab_c <- coef(summary(model_small))
+pvals_c <- 2 * pnorm(-abs(ctab_c[, "t value"]))
+cbind(ctab_c, `p value` = pvals_c)
+```
+The effect of housing becomes statistically significant in the small model, with a positive coefficient indicating that more secure housing is associated with more frequent credit card use. This finding contrasts with the full model, where housing tenure was the least significant predictor and not statistically different.
+The contradiction could be because, in the full model, the effect of housing may have been masked by collinearity or shared variance with other predictors like income or bank access. But in isolation, housing tenure shows a clear association with card use.
+
+### d
+
+Use stepwise AIC to select a smaller model than the full set of predictors. You will need to handle the missing values carefully. Report on the qualitative effect of the predictors in your chosen model. Can we conclude that the predictors that were dropped from the model have no relation to the response?
 
 
 ## Q5
