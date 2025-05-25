@@ -443,6 +443,23 @@ The quasi‐Poisson model relaxes the fixed‐dispersion assumption of the ordin
 ### e
 
 Use the sandwich estimation method for the standard errors in the original model. Use these to compute z-statistics.
+```{r}
+Vc_robust   <- vcovHC(full, type = "HC0")
+
+# Extract robust SE for Elevation
+se_robust   <- sqrt(diag(Vc_robust))["Elevation"]
+coef_elev   <- coef(full)["Elevation"]
+
+# Compute robust Wald z‐statistic and p‐value
+z_robust    <- coef_elev / se_robust
+p_robust    <- 2 * (1 - pnorm(abs(z_robust)))
+
+cat("Sandwich-robust SE for Elevation:", round(se_robust, 6), "\n")
+cat("Robust Wald z-statistic:         ", round(z_robust, 4), "\n")
+cat("Robust p-value:                  ", format.pval(p_robust, digits=4), "\n")
+```
+Under the sandwich‐robust approach, the standard error for the elevation coefficient is just 0.000508, which translates into a Wald statistic of approx. 6.96 and a p‐value of approx. 3.3 × 10^ -12. This extremely small p‐value tells us that even when we guard against potential model misspecification or overdispersion the effect of elevation on species count remains highly significant. So the elevation is very unlikely to have no impact, and we can confidently conclude it plays a meaningful role in predicting the number of species on the Galápagos islands.
+
 
 ### f
 
