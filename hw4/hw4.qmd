@@ -426,6 +426,19 @@ The Pearson chisquared difference compares how much the sum of squared Pearson r
 ### d
 
 Fit the Poisson model with a free dispersion parameter as described in Section 5.2. Make the test using the model summary.
+```{r}
+# Quasi‐Poisson model 
+qp <- glm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent,
+          family = quasipoisson(link = "log"), data = gala)
+
+sum_qp   <- summary(qp)$coef
+t_stat   <- sum_qp["Elevation","t value"]
+p_val_qp <- sum_qp["Elevation","Pr(>|t|)"]
+
+cat("Quasi-Poisson t =", round(t_stat, 4),
+    ", p-value =", round(p_val_qp, 4), "\n")
+```
+The quasi‐Poisson model relaxes the fixed‐dispersion assumption of the ordinary Poisson GLM. In this model, the estimated coefficient for elevation yields a t–statistic of 7.19 with a p-value effectively zero (rounded). This tells us that even after letting the data speak to how much extra Poisson variability there is, elevation stands out as a very strong predictor of species count. We can conclude that the relationship between elevation and number of species is highly unlikely to be due to random chance, so we confidently reject the notion that elevation has no effect.
 
 ### e
 
