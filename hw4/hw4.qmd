@@ -192,7 +192,6 @@ Fit a Poisson model to the species response with the five geographic variables a
 ```{r}
 data(gala)
 
-# Remove the 'endemics' variable
 gala <- gala[, !names(gala) %in% "Endemics"]
 
 # Fit the Poisson GLM
@@ -203,7 +202,6 @@ coef(modp)
 
 # Report the deviance
 deviance(modp)
-
 ```
 
 ### b
@@ -213,10 +211,42 @@ For a Poisson GLM, derive n, dn/du, Vu) and the weights to be used in an iterati
 ### c
 
 Using the observed response as initial values, compute the first stage of the iteration, stopping after the first linear model fit. Compare the coefficients of this linear model to those found in the GLM fit. How close are they?
+```{r}
+# Rsponse and predictors
+y <- gala$Species
+X <- model.matrix(Species ~ ., data = gala)  
+
+# y as the initial estimate for mu
+mu <- y
+
+eta <- log(mu)
+
+# Adjusted dependent variable z
+z <- eta + (y - mu) / mu  
+
+# Weights
+w <- 1 / mu
+
+# Weighted least squares model
+lmod <- lm(z ~ . , data = gala, weights = w)
+
+# Coefficients from the linear model
+cat("First iteration coefficients (IRLS):\n")
+print(coef(lmod))
+
+# Compare with the full Poisson GLM fit
+modp <- glm(Species ~ ., family = poisson, data = gala)
+cat("\nGLM coefficients:\n")
+print(coef(modp))
+```
+While the signs and rough magnitudes of most coefficients are similar after the first IRLS step, there are still noticeable differences especially in the intercept and the "Nearest" variable. This is expected because the IRLS algorithm is iterative and only one update step has been performed. Further iterations will move the estimates closer to the maximum likelihood estimates obtained from the GLM fit.
 
 ### d
 
 Continue the iteration to get the next n and u. Use this to compute the current value of the deviance. How close is this to the deviance from the GLM?
+```{r}
+
+```
 
 ### e
 
