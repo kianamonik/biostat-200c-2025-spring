@@ -156,7 +156,8 @@ ence to use this type of model?
 library(VGAM)
 library(dplyr)
 
-cr_model <- vglm(ccarduse ~ incomegp + agegp + bankacc + manage + cigbuy + prodebt,
+cr_model <- vglm(ccarduse ~ incomegp + agegp + bankacc + manage + cigbuy
+                 + prodebt,
                  family = cratio(parallel = TRUE, reverse = FALSE),
                  data = debt_imputed)
 
@@ -173,8 +174,10 @@ nonsmoker_data <- med_values %>% mutate(cigbuy = 0)
 smoker_data    <- med_values %>% mutate(cigbuy = 1)
 
 # Predict outcome probabilities
-nonsmoker_cr_probs <- predict(cr_model, newdata = nonsmoker_data, type = "response")
-smoker_cr_probs    <- predict(cr_model, newdata = smoker_data,    type = "response")
+nonsmoker_cr_probs <- predict(cr_model, newdata = nonsmoker_data,
+                              type = "response")
+smoker_cr_probs    <- predict(cr_model, newdata = smoker_data,
+                              type = "response")
 
 contrast_cr <- rbind(Nonsmoker = nonsmoker_cr_probs, Smoker = smoker_cr_probs)
 rownames(contrast_cr) <- c("Nonsmoker", "Smoker")
@@ -212,32 +215,34 @@ For a Poisson GLM, derive n, dn/du, Vu) and the weights to be used in an iterati
 
 Using the observed response as initial values, compute the first stage of the iteration, stopping after the first linear model fit. Compare the coefficients of this linear model to those found in the GLM fit. How close are they?
 ```{r}
-# Rsponse and predictors
+# Response and fixed design matrix
 y <- gala$Species
-X <- model.matrix(Species ~ ., data = gala)  
+X <- model.matrix(Species ~ ., data = gala)
 
-# y as the initial estimate for mu
-mu <- y
+# Fit saturated glm once for comparison
+modp     <- glm(Species ~ ., family = poisson(link = "log"), data = gala)
+coef_glm <- coef(modp)
+dev_glm  <- deviance(modp)
 
-eta <- log(mu)
+mu       <- ifelse(y == 0, 0.1, y)
+eta      <- log(mu)
 
-# Adjusted dependent variable z
-z <- eta + (y - mu) / mu  
+# Adjusted response and weights
+z        <- eta + (y - mu) / mu
+w        <- mu    
 
-# Weights
-w <- 1 / mu
+# Weighted LS on fixed X
+lmod_1   <- lm(z ~ X - 1, weights = w)
+beta_1   <- coef(lmod_1)
+eta_1    <- as.vector(X %*% beta_1)
+mu_1     <- exp(eta_1)
+mu_1     <- pmax(mu_1, 1e-10) 
 
-# Weighted least squares model
-lmod <- lm(z ~ . , data = gala, weights = w)
-
-# Coefficients from the linear model
-cat("First iteration coefficients (IRLS):\n")
-print(coef(lmod))
-
-# Compare with the full Poisson GLM fit
-modp <- glm(Species ~ ., family = poisson, data = gala)
+# Compare coefficients
+cat("First IRLS coefficients:\n")
+print(round(beta_1,6))
 cat("\nGLM coefficients:\n")
-print(coef(modp))
+print(round(coef_glm,6))
 ```
 While the signs and rough magnitudes of most coefficients are similar after the first IRLS step, there are still noticeable differences especially in the intercept and the "Nearest" variable. This is expected because the IRLS algorithm is iterative and only one update step has been performed. Further iterations will move the estimates closer to the maximum likelihood estimates obtained from the GLM fit.
 
@@ -245,20 +250,121 @@ While the signs and rough magnitudes of most coefficients are similar after the 
 
 Continue the iteration to get the next n and u. Use this to compute the current value of the deviance. How close is this to the deviance from the GLM?
 ```{r}
+dev1 <- 2 * sum(ifelse(y == 0,
+                      mu_1,
+                      y * log(y / mu_1) - (y - mu_1)))
 
+cat("Deviance after 1st IRLS step:", round(dev1,4), "\n")
+cat("GLM deviance:            ", round(dev_glm,4), "\n")
+cat("Absolute difference:     ", round(abs(dev1 - dev_glm),4), "\n")
 ```
+The first IRLS step reduced the deviance substantially from the saturated model start, but the model is still not fully converged and the deviance remains about 111 units above the final GLM value.
 
 ### e
 
 Compute one more iteration of the GLM fit, reporting the next calculation of the coefficients and deviance. How close are these to target now?
+```{r}
+# Adjusted response and weights with μ₁
+z2   <- log(mu_1) + (y - mu_1) / mu_1
+w2   <- mu_1
+w2   <- pmax(w2, 1e-8) 
+
+# Weighted LS again
+lmod_2 <- lm(z2 ~ X - 1, weights = w2)
+beta_2 <- coef(lmod_2)
+eta_2  <- as.vector(X %*% beta_2)
+mu_2   <- exp(eta_2)
+mu_2   <- pmax(mu_2, 1e-10)
+
+# Deviance
+dev2 <- 2 * sum(ifelse(y == 0,
+                      mu_2,
+                      y * log(y / mu_2) - (y - mu_2)))
+
+# Output
+cat("Second IRLS coefficients:\n")
+print(round(beta_2,6))
+cat("\nDeviance after 2nd IRLS step:", round(dev2,4), "\n")
+cat("GLM deviance:              ", round(dev_glm,4), "\n")
+cat("Absolute difference:       ", round(abs(dev2 - dev_glm),4), "\n")
+
+```
+After two IRLS iterations, the deviance is within 2.6 units of the GLM’s 716.85, and all coefficient estimates are now very close. This shows the rapid convergence of the IRLS algorithm towards the maximum-likelihood solution.
+
+
 
 ### f
 
 Repeat these iterations a few more times, computing the deviance in each time. Stop when the deviance does not change much. Compare your final estimated coefficients to that produced by the GLM fit.
+```{r}
+max_iter      <- 50
+tol           <- 1e-6
+deviance_hist <- numeric(max_iter)
+beta_hist     <- matrix(NA, nrow=max_iter, ncol=ncol(X),
+                        dimnames=list(NULL, colnames(X)))
+
+# initialize mu
+mu <- ifelse(y==0, 0.1, y)
+
+for(iter in 1:max_iter) {
+  # IRLS update
+  eta <- log(mu)
+  z   <- eta + (y - mu)/mu
+  w   <- pmax(mu, 1e-8)         # Poisson weights, floored
+  fit <- lm(z ~ X - 1, weights = w)
+  beta <- coef(fit)
+  
+  # store
+  beta_hist[iter, ]     <- beta
+  mu                    <- pmax(exp(as.vector(X %*% beta)), 1e-10)
+  deviance_hist[iter]   <- 2 * sum(ifelse(y==0,
+                                          mu,
+                                          y*log(y/mu) - (y - mu)))
+  
+  # check for convergence
+  if(iter > 1 &&
+     abs(deviance_hist[iter] - deviance_hist[iter-1]) < tol) {
+    break
+  }
+}
+
+n_iter    <- iter
+beta_final<- beta_hist[n_iter, ]
+dev_final <- deviance_hist[n_iter]
+
+# Print results
+cat("IRLS converged in", n_iter, "iterations\n\n")
+cat("Final IRLS coefficients:\n")
+print(round(beta_final,6))
+cat("\nGLM coefficients:\n")
+print(round(coef_glm,6), quote=FALSE)
+
+cat("\nFinal IRLS deviance:", round(dev_final,4), "\n")
+cat("GLM deviance:        ", round(dev_glm,4), "\n")
+cat("Difference:          ", round(dev_final - dev_glm,4), "\n\n")
+```
+By the fifth iteration the IRLS estimates have exactly matched the maximum‐likelihood estimates returned by glm, both in terms of the regression coefficients and the deviance. This confirms that the IRLS algorithm, when carried out to convergence, gets us the same solution as the built‐in glm.
 
 ### g
 
 Use your final iterated linear model fit to produce standard errors for the coef-ficients. How close are these to that produced by the direct GLM fit?
+```{r}
+W_final <- diag(pmax(mu,1e-8))
+cov_irls <- solve(t(X) %*% W_final %*% X)
+se_irls  <- sqrt(diag(cov_irls))
+
+se_glm   <- summary(modp)$coef[, "Std. Error"]
+
+results_se <- data.frame(
+  Predictor = names(beta_final),
+  IRLS_SE   = round(se_irls, 6),
+  GLM_SE    = round(se_glm, 6),
+  Difference= round(se_irls - se_glm, 6)
+)
+
+print(results_se, row.names=FALSE)
+```
+The IRLS‐based standard errors are identical (to within numerical precision) to those reported by summary(glm()).
 
 ## Q6
 
