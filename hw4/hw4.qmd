@@ -373,10 +373,32 @@ Again using the Galápagos data, fit a Poisson model to the species response wit
 ### a
 
 Use the z-statistic from the model summary.
+```{r}
+library(sandwich)
+library(robust)
+
+data(gala)
+gala <- gala[, !names(gala) %in% "Endemics"]
+
+full <- glm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent,
+            family=poisson(link="log"), data=gala)
+
+elev <- summary(full)$coef["Elevation", ]
+
+# Extract z–statistic and p–value
+z_stat <- elev["z value"]
+p_val  <- elev["Pr(>|z|)"]
+
+cat("Elevation: z =", round(z_stat, 4),
+    ", p-value =", round(p_val, 4), "\n")
+```
 
 ### b
 
 Fit a model without elevation and use the difference in deviances to make the test.
+```{r}
+
+```
 
 ### c
 
