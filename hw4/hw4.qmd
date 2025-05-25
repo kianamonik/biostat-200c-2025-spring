@@ -464,7 +464,23 @@ Under the sandwich‐robust approach, the standard error for the elevation coeff
 ### f
 
 Use the robust GLM estimation method and report the test result from the summary.
+```{r}
+library(robustbase)
+
+# Fit robust Poisson‐type GLM
+rmod <- glmrob(Species ~ Area + Elevation + Nearest + Scruz + Adjacent,
+               family = poisson(link="log"), data = gala)
+
+# Extract robust‐GLM z‐statistic and p‐value for Elevation
+robust_coefs <- summary(rmod)$coef["Elevation", ]
+z_rglm       <- robust_coefs["z value"]
+p_rglm       <- robust_coefs["Pr(>|z|)"]
+
+cat("Robust‐GLM z‐statistic:", round(z_rglm, 4), 
+    ", p‐value:", format.pval(p_rglm, digits=4), "\n")
+```
+This model gives us the z-statistic of 33.58 for the elevation coefficient and a p-value below 2.2 × 10 ^ -16. In other words, even when we down-weight any potential outliers or leverage points, elevation remains an overwhelmingly strong predictor of species count. We therefore can again confidently reject the null hypothesis claiming that elevation has no effect.
 
 ### g
-
 Compare all six results. Pick the best one and justify your choice.
+All six tests give very similar p-values (significant;y lower than the threshold of <0.05), showing strong evidence against the null hypothesis. For a standard Poisson GLM with no overdispersion, the likelihood‐ratio test (part b) is the ideal approach as it directly compares nested models on the deviance scale, retains good chisquare properties for Poisson data, and is more reliable than the Wald test when sample sizes are moderate. If we were worried about mild model misspecification or overdispersion, we could turn to the sandwich‐based Wald test (part e) or the robust‐glm test (part f), but here they only reaffirm the same conclusion. So in this context, where the Poisson model appears well‐specified and there is no indication of serious overdispersion, the likelihood‐ratio test offers the most direct and dependable approach
