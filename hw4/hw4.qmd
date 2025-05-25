@@ -303,25 +303,21 @@ deviance_hist <- numeric(max_iter)
 beta_hist     <- matrix(NA, nrow=max_iter, ncol=ncol(X),
                         dimnames=list(NULL, colnames(X)))
 
-# initialize mu
 mu <- ifelse(y==0, 0.1, y)
 
 for(iter in 1:max_iter) {
-  # IRLS update
   eta <- log(mu)
   z   <- eta + (y - mu)/mu
-  w   <- pmax(mu, 1e-8)         # Poisson weights, floored
+  w   <- pmax(mu, 1e-8)       
   fit <- lm(z ~ X - 1, weights = w)
   beta <- coef(fit)
   
-  # store
   beta_hist[iter, ]     <- beta
   mu                    <- pmax(exp(as.vector(X %*% beta)), 1e-10)
   deviance_hist[iter]   <- 2 * sum(ifelse(y==0,
                                           mu,
                                           y*log(y/mu) - (y - mu)))
   
-  # check for convergence
   if(iter > 1 &&
      abs(deviance_hist[iter] - deviance_hist[iter-1]) < tol) {
     break
@@ -332,7 +328,6 @@ n_iter    <- iter
 beta_final<- beta_hist[n_iter, ]
 dev_final <- deviance_hist[n_iter]
 
-# Print results
 cat("IRLS converged in", n_iter, "iterations\n\n")
 cat("Final IRLS coefficients:\n")
 print(round(beta_final,6))
@@ -413,6 +408,20 @@ A likelihood‐ratio statistic of 1,672.723 on 1 degree of freedom is astronomic
 ### c
 
 Use the Pearson Chi-squared statistic in place of the deviance in the previous test.
+```{r}
+X2_full   <- sum(residuals(full, type = "pearson")^2)
+X2_reduced<- sum(residuals(reduced, type = "pearson")^2)
+
+# Test statistic and p‐value
+pearson_stat <- X2_reduced - X2_full
+pearson_p    <- 1 - pchisq(pearson_stat, df = 1)
+
+cat(
+  "Pearson χ² difference =", round(pearson_stat, 4),
+  ", p‐value =", format.pval(pearson_p, digits = 4), "\n"
+)
+```
+The Pearson chisquared difference compares how much the sum of squared Pearson residuals increases when Elevation is dropped. A statistic of 2148.557 with p‐value essentially zero tells us that omitting Elevation dramatically worsens the fit. Therefore, as with the likelihood‐ratio test, we reject the null hypothesis that the elevation coefficient is zero and conclude that Elevation is a highly significant predictor of species counts.
 
 ### d
 
