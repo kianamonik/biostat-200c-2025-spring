@@ -19,7 +19,9 @@ library(dplyr)
 data(debt)
 
 # Convert 'ccarduse' to an ordered factor
-debt$ccarduse <- factor(debt$ccarduse, levels = c(1, 2, 3), labels = c("never", "occasionally", "regularly"), ordered = TRUE)
+debt$ccarduse <- factor(debt$ccarduse, levels = c(1, 2, 3),
+                        labels = c("never", "occasionally", "regularly"),
+                        ordered = TRUE)
 
 # Boxplot: prodebt vs. ccuse
 ggplot(debt, aes(x = ccarduse, y = prodebt)) +
@@ -55,7 +57,9 @@ Fit a proportional odds model for credit card use with all the other variables a
 library(MASS)
 
 # Fit the proportional odds model
-model_full <- polr(ccarduse ~ incomegp + house + children + singpar + agegp + bankacc + bsocacc + manage + cigbuy + xmasbuy + locintrn + prodebt, data = debt, Hess = TRUE, na.action = na.omit)
+model_full <- polr(ccarduse ~ incomegp + house + children + singpar + agegp +
+                     bankacc + bsocacc + manage + cigbuy + xmasbuy + locintrn 
+                   + prodebt, data = debt, Hess = TRUE, na.action = na.omit)
 
 # Summary of the model
 summary(model_full)
@@ -73,7 +77,8 @@ ctable[order(abs(ctable[, "t value"]), decreasing = TRUE), ]
 
 Fit a proportional odds model using only the least significant predictor from the previous model. What is the significance of this predictor in this small model? Are the conclusions regarding this predictor contradictory for the two models?
 ```{r}
-model_small <- polr(ccarduse ~ house, data = debt, Hess = TRUE, na.action = na.omit)
+model_small <- polr(ccarduse ~ house, data = debt, Hess = TRUE,
+                    na.action = na.omit)
 
 # Summary of the model
 summary(model_small)
@@ -108,7 +113,8 @@ debt_imputed <- complete(imputed_data)
 
 # Fit model and run stepwise selection
 model_full_imputed <- polr(ccarduse ~ ., data = debt_imputed, Hess = TRUE)
-model_step_imputed <- stepAIC(model_full_imputed, direction = "both", trace = FALSE)
+model_step_imputed <- stepAIC(model_full_imputed, direction = "both",
+                              trace = FALSE)
 summary(model_step_imputed)
 ```
 The final model retained six predictors: income group, age group, bank account status, ability to manage finances, cigarette buying, and pro-debt attitude. Higher income, older age, having a bank account, and stronger pro-debt attitudes were associated with more frequent credit card use. In contrast, cigarette buyers were less likely to use credit cards. Although some predictors were dropped. This does not imply they have no relationship with the response. It only means that they did not improve model fit beyond the retained variables.
@@ -134,17 +140,47 @@ new_data <- bind_rows(
 )
 
 # Predict
-predicted_probs <- predict(model_step_imputed, newdata = new_data, type = "probs")
+predicted_probs <- predict(model_step_imputed, newdata = new_data,
+                           type = "probs")
 rownames(predicted_probs) <- c("Smoker (cigbuy=1)", "Non-smoker (cigbuy=0)")
 print(round(predicted_probs, 4))
 ```
-
+At the median values of all predictors, smokers have a much higher predicted probability of never using credit cards (66.2%) compared to non-smokers (49.4%). On the other hand non-smokers are more likely to fall into the occasionally or regularly using categories. This could suggest that cigarette buying is negatively associated with frequent credit card use, which is consistent with the negative coefficient on cigbuy in the model.
 
 ### f
 
 Fit a proportional hazards model to the same set of predictors and recompute
 the two sets of probabilities from the previous question. Does it make a differ-
 ence to use this type of model?
+```{r}
+library(VGAM)
+library(dplyr)
+
+cr_model <- vglm(ccarduse ~ incomegp + agegp + bankacc + manage + cigbuy + prodebt,
+                 family = cratio(parallel = TRUE, reverse = FALSE),
+                 data = debt_imputed)
+
+med_values <- tibble(
+  incomegp = median(debt_imputed$incomegp, na.rm = TRUE),
+  agegp    = median(debt_imputed$agegp,    na.rm = TRUE),
+  bankacc  = median(debt_imputed$bankacc,  na.rm = TRUE),
+  manage   = median(debt_imputed$manage,   na.rm = TRUE),
+  prodebt  = median(debt_imputed$prodebt,  na.rm = TRUE)
+)
+
+# Prediction data for smoker and nonsmoker profiles
+nonsmoker_data <- med_values %>% mutate(cigbuy = 0)
+smoker_data    <- med_values %>% mutate(cigbuy = 1)
+
+# Predict outcome probabilities
+nonsmoker_cr_probs <- predict(cr_model, newdata = nonsmoker_data, type = "response")
+smoker_cr_probs    <- predict(cr_model, newdata = smoker_data,    type = "response")
+
+contrast_cr <- rbind(Nonsmoker = nonsmoker_cr_probs, Smoker = smoker_cr_probs)
+rownames(contrast_cr) <- c("Nonsmoker", "Smoker")
+print(round(contrast_cr, 4))
+```
+Using the cumulative ratio model, the predicted probabilities moved slightly. Smokers still have a higher probability of never using credit cards (63.5% vs. 50.8%) and a lower probability of regular use (10.2% vs. 19.4%), but the differences between smokers and non-smokers are less extreme than in the proportional odds model. This shows that model choice can meaningfully affect interpretation of ordinal outcomes.
 
 ## Q5
 
@@ -153,6 +189,22 @@ Consider the Galápagos data and model analyzed in this chapter. The purpose of 
 ### a
 
 Fit a Poisson model to the species response with the five geographic variables as predictors. Do not use the endemics variable. Report the values of the coefficients and the deviance.
+```{r}
+data(gala)
+
+# Remove the 'endemics' variable
+gala <- gala[, !names(gala) %in% "Endemics"]
+
+# Fit the Poisson GLM
+modp <- glm(Species ~ ., family = poisson, data = gala)
+
+# View the coefficient estimates
+coef(modp)
+
+# Report the deviance
+deviance(modp)
+
+```
 
 ### b
 
