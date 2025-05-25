@@ -392,13 +392,23 @@ p_val  <- elev["Pr(>|z|)"]
 cat("Elevation: z =", round(z_stat, 4),
     ", p-value =", round(p_val, 4), "\n")
 ```
+A z‐statistic of 40.507 means that the estimated elevation coefficient is over forty standard errors away from zero, which is very unlikely under the null hypothesis and the p-value (rounded) of 0 also tells us that we can safely reject the null hypothesis. In other words, elevation is a highly significant predictor of the number of species on the Galápagos islands, holding the other geographic variables constant.
+
 
 ### b
 
 Fit a model without elevation and use the difference in deviances to make the test.
 ```{r}
+# Reduced model
+reduced <- update(full, . ~ . - Elevation)
 
+LRstat <- deviance(reduced) - deviance(full)
+p_val  <- 1 - pchisq(LRstat, df = 1)
+
+cat("Likelihood‐Ratio statistic deviance difference =", round(LRstat, 4),
+    ", p-value =", round(p_val, 4), "\n")
 ```
+A likelihood‐ratio statistic of 1,672.723 on 1 degree of freedom is astronomically large compared to the chiaquare critical value, and a p‐value (rounded) of zero also tells us that the chance of observing such a big drop in deviance if Elevation truly had no effect is essentially zero. Thus, we can reject the null hypothesis that the elevation coefficient is zero, confirming that elevation is a significant predictor of species count on the Galápagos islands.
 
 ### c
 
