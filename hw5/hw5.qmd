@@ -4,3 +4,104 @@ format: pdf
 editor: visual
 ---
 
+## Q3
+The ratdrink data consist of five weekly measurements of body weight for 27 rats. The first 10 rats are on a control treatment while 7 rats have thyroxine added to their drinking water. Ten rats have thiouracil added to their water.\
+
+
+### a 
+Plot the data showing how weight increases with age on a single panel, taking care to distinguish the three treatment groups. Now create a three-panel plot, one for each group. Discuss what can be seen.
+```{r}
+library(faraway)
+library(dplyr)
+data(ratdrink)
+glimpse(ratdrink)
+summary(ratdrink)
+
+library(ggplot2)
+
+# One panel plot
+ggplot(ratdrink, aes(x = weeks, y = wt, group = subject, color = treat)) +
+  geom_line(alpha = 0.6) +
+  labs(title = "Rat Weight Over Time by Treatment",
+       x = "Weeks", y = "Weight (g)", color = "Treatment") +
+  theme_minimal()
+
+# Three-panel faceted plot by treatment
+ggplot(ratdrink, aes(x = weeks, y = wt, group = subject)) +
+  geom_line(aes(color = subject), show.legend = FALSE) +
+  facet_wrap(~ treat) +
+  labs(title = "Weight Trajectories by Treatment Group",
+       x = "Weeks", y = "Weight (g)") +
+  theme_minimal()
+
+```
+From the single panel plot we can see that all groups tend to show increasing weight over time. The second (three-panel) plot shows the weight of rats over time, with different treatments separated via the panels. The three-panel plot allows for a clearer comparison of how each treatment group (control, thyroxine, thiouracil) affects weight gain over the weeks. The control group shows a steady increase in weight, while the thyroxine group appears to gain weight slightly more rapidly. The thiouracil group shows a slower increase, indicating a potential suppression of weight gain compared to the other groups.
+
+### b 
+Fit a linear longitudinal model that allows for a random slope and intercept for each rat. Each group should have a different mean line. Give interpretation for the following estimates:
+i. The fixed effect intercept term.\
+ii. The interaction between thiouracil and week.\
+iii. The intercept random effect SD.\
+
+
+### c 
+Check whether there is a significant treatment effect.
+
+
+### d 
+Construct diagnostic plots showing the residuals against the fitted values and a QQ plot of the residuals. Interpret.
+
+
+### e 
+Construct confidence intervals for the parameters of the model. Which random effect terms may not be significant? Is the thyroxine group significantly different from the control group?
+
+
+## Q4
+The ohio data concern 536 children from Steubenville, Ohio and were taken as part of a study on the effects of air pollution. Children were in the study for 4 years from ages 7 to 10. The response was whether they wheezed or not. The variables are:\
+resp: an indicator of wheeze status (1 = yes, 0 = no)\
+id: an identifier for the child\
+age: 7 yrs = -2, 8 yrs = - 1, 9 yrs = 0, 10 yrs = 1\
+smoke: an indicator of maternal smoking at the first year of the study (1 = smoker, 0 = nonsmoker)\
+
+
+### a
+Do any of the mothers in the study change their smoking status during the period of observation?
+
+
+### b 
+Construct a table that shows proportion of children who wheeze for 0, 1, 2, 3 or 4 years broken down by maternal smoking status.
+
+
+### c 
+Make plot which shows how the proportion of children wheezing changes by age with a separate line for smoking and nonsmoking mothers.
+
+
+### d 
+Group the data by child to count the total (out of four) years of wheezing.\
+Fit a binomial GLM to this response to check for a maternal smoking effect.\
+Does this prove there is a smoking effect or could there be another plausible explanation?\
+
+
+### e 
+Fit a model for each individual response using a GLMM fit using penalized quasi-likelihood. Describe the effects of age and maternal smoking. How do the odds of wheezing change numerically over time?
+
+
+### f 
+Now fit the same model but using adaptive Gaussian-Hermit quadrature. Compare to the previous model fit.
+
+
+### g 
+Use INLA to fit the same model. What does this model say about the effect of age and maternal smoking?
+
+
+### h 
+Use STAN to fit the same model. Check the MCMC diagnostics and again discuss the age
+and maternal smoking effects.
+
+
+### i
+Fit the model using GEE. Use an autoregressive rather than exchangeable error structure. Compare the results to the previous model fits. In your model, what indicates that a child who already wheezes is likely to continue to wheeze?
+
+
+### j 
+What is your overall conclusion regarding the effect of age and maternal smok-ing? Can we trust the GLM result or are the GLMM models preferable?
