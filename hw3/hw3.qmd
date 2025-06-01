@@ -3,14 +3,12 @@ title: "Biostat 200C Homework 3"
 subtitle: Due May 9 @ 11:59PM
 date: today
 format:
-  html:
+ pdf:
     theme: cosmo
     embed-resources: true
     number-sections: true
     toc: true
-    toc-depth: 4
-    toc-location: left
-    code-fold: false
+    colorlinks: true
 engine: knitr
 knitr:
   opts_chunk: 
