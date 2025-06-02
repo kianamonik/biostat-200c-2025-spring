@@ -42,7 +42,19 @@ Fit a linear longitudinal model that allows for a random slope and intercept for
 i. The fixed effect intercept term.\
 ii. The interaction between thiouracil and week.\
 iii. The intercept random effect SD.\
+```{r}
+library(lme4)
 
+model_b <- lmer(wt ~ weeks * treat + (weeks | subject), data = ratdrink)
+
+summary(model_b)
+```
+Interpretation of the estimates:\
+i. The fixed effect intercept term represents the average weight of a rat at week 0 (the baseline) across all treatment groups. It serves as the starting point for the weight trajectory of the rats before any treatment effects are applied. At week 0, rats in the control group weigh an average of 52.88 grams.\
+
+ii. The interaction between thiouracil and week indicates how the effect of time (weeks) on weight differs for rats receiving thiouracil compared to the control group. A negative coefficient suggests that as weeks progress, the weight gain in the thiouracil group is less than that in the control group, indicating a potential suppression of weight gain due to thiouracil treatment. Rats in the thiouracil group gain weight at a slower rate than control rats by about 9.37 grams less per week on average, (after adjusting for random individual variation and initial group differences). Even though the thiouracil group has a positive main effect (+4.78), this interaction shows that their growth rate over time is significantly lower than control.\
+
+iii. The intercept random effect SD represents the variability in the initial weights of the rats across different subjects. A higher value indicates that there is considerable individual variation in starting weights among the rats, suggesting that some rats start at a significantly different weight than others, regardless of treatment. In this case, individual rats vary around the group-level intercept (52.88g) with a standard deviation of about 5.7 grams. That is, some rats start heavier or lighter than average, even within the same treatment group.\
 
 ### c 
 Check whether there is a significant treatment effect.
