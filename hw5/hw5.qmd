@@ -16,7 +16,6 @@ library(dplyr)
 data(ratdrink)
 glimpse(ratdrink)
 summary(ratdrink)
-
 library(ggplot2)
 
 # One panel plot
@@ -33,7 +32,6 @@ ggplot(ratdrink, aes(x = weeks, y = wt, group = subject)) +
   labs(title = "Weight Trajectories by Treatment Group",
        x = "Weeks", y = "Weight (g)") +
   theme_minimal()
-
 ```
 From the single panel plot we can see that all groups tend to show increasing weight over time. The second (three-panel) plot shows the weight of rats over time, with different treatments separated via the panels. The three-panel plot allows for a clearer comparison of how each treatment group (control, thyroxine, thiouracil) affects weight gain over the weeks. The control group shows a steady increase in weight, while the thyroxine group appears to gain weight slightly more rapidly. The thiouracil group shows a slower increase, indicating a potential suppression of weight gain compared to the other groups.
 
@@ -58,10 +56,35 @@ iii. The intercept random effect SD represents the variability in the initial we
 
 ### c 
 Check whether there is a significant treatment effect.
+```{r}
+# Full model (same as model_b)
+model_full <- lmer(wt ~ weeks * treat + (weeks | subject), data = ratdrink)
 
+# Reduced model (no treatment terms)
+model_reduced <- lmer(wt ~ weeks + (weeks | subject), data = ratdrink)
+
+# Likelihood ratio test
+anova(model_reduced, model_full)
+```
+The likelihood ratio test comparing the reduced model (only time effect) to the full model (which includes treatment and treatment-by-time interactions) yields a Chi-squared statistic of 25.14 on 4 degrees of freedom, with a p-value of 4.723e-05. This provides strong evidence that treatment has a significant effect on weight and including treatment in the model improves the model fit significantly.
 
 ### d 
 Construct diagnostic plots showing the residuals against the fitted values and a QQ plot of the residuals. Interpret.
+```{r}
+resid <- residuals(model_full)
+fitted_vals <- fitted(model_full)
+
+# Residuals vs Fitted Plot
+plot(fitted_vals, resid,
+     xlab = "Fitted Values", ylab = "Residuals",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+
+# QQ Plot
+qqnorm(resid, main = "Normal Q-Q Plot of Residuals")
+qqline(resid, col = "red")
+```
+The residuals vs. fitted values plot shows no clear pattern, indicating that the model assumptions of homoscedasticity (constant variance) and linearity are reasonably met. The residuals are randomly scattered around zero, suggesting that the model fits the data well without systematic errors. The QQ plot shows that the residuals mostly follow a straight line, indicating that the assumption of normality of residuals is also reasonably satisfied, though there are very minor deviations at the tails.
 
 
 ### e 
