@@ -121,7 +121,21 @@ smoke: an indicator of maternal smoking at the first year of the study (1 = smok
 
 ### a
 Do any of the mothers in the study change their smoking status during the period of observation?
+```{r}
+data(ohio)
+glimpse(ohio)
+summary(ohio)
 
+# Check if smoke changes within each child
+smoke_varies <- ohio %>%
+  group_by(id) %>%
+  summarize(unique_smoke = n_distinct(smoke)) %>%
+  filter(unique_smoke > 1)
+
+# how many such children exist
+nrow(smoke_varies)
+```
+The data show that no child had a change in maternal smoking status during the 4-year observation period. This confirms that maternal smoking is a fixed variable, measured at baseline and held constant over time in this study.
 
 ### b 
 Construct a table that shows proportion of children who wheeze for 0, 1, 2, 3 or 4 years broken down by maternal smoking status.
