@@ -89,6 +89,26 @@ The residuals vs. fitted values plot shows no clear pattern, indicating that the
 
 ### e 
 Construct confidence intervals for the parameters of the model. Which random effect terms may not be significant? Is the thyroxine group significantly different from the control group?
+```{r}
+ci <- confint(model_full, method = "profile")
+rownames(ci)[1:4] <- c("SD: Random Intercept", 
+                       "Correlation: Intercept/Slope", 
+                       "SD: Random Slope (weeks)", 
+                       "Residual SD")
+ci
+```
+Random‐intercept SD: The entire CI lies above 0 -> significantly positive.\
+Correlation (Intercept, slope) : This CI crosses 0 -> the correlation is not significantly different from zero.\
+Random‐slope SD : The entire CI lies above 0 -> significantly positive.\
+Residual SD : Obviously > 0; not tested for significance in the same way.\
+Therefore, the only random‐effect parameter whose interval includes zero is the intercept–slope correlation (.sig02). Both variance components (random‐intercept SD and random‐slope SD) are significantly above zero.\
+Is the thyroxine group significantly different from the control group?\
+Intercept (baseline) weight difference (treatthyroxine): 95% CI = [–7.0445, 5.45596] includes 0, so not significantly different from control at week 0.\
+Slope difference (growth rate) (weeks:treatthyroxine): 95% CI = [–3.1166, 4.44235] includes 0, so not significantly different from control in rate of weight gain.\
+
+
+
+
 
 
 ## Q4
