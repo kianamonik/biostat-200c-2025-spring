@@ -183,6 +183,33 @@ wheeze_table_wide
 
 ### c 
 Make plot which shows how the proportion of children wheezing changes by age with a separate line for smoking and nonsmoking mothers.
+```{r}
+# Convert coded age to actual age
+ohio <- ohio %>%
+  mutate(real_age = age + 9) 
+
+# Compute proportion wheezing at each age by smoking group
+wheeze_by_age <- ohio %>%
+  group_by(real_age, smoke) %>%
+  summarize(
+    prop_wheeze = mean(resp),
+    .groups = "drop"
+  )
+
+# Plot\
+ggplot(wheeze_by_age, aes(x = real_age, y = prop_wheeze, color = factor(smoke))) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Proportion of Children Wheezing by Age and Maternal Smoking",
+    x = "Age",
+    y = "Proportion Wheezing",
+    color = "Maternal Smoker"
+  ) +
+  scale_x_continuous(breaks = 7:10) +
+  scale_color_manual(values = c("blue", "red"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
 
 
 ### d 
@@ -197,15 +224,6 @@ Fit a model for each individual response using a GLMM fit using penalized quasi-
 
 ### f 
 Now fit the same model but using adaptive Gaussian-Hermit quadrature. Compare to the previous model fit.
-
-
-### g 
-Use INLA to fit the same model. What does this model say about the effect of age and maternal smoking?
-
-
-### h 
-Use STAN to fit the same model. Check the MCMC diagnostics and again discuss the age
-and maternal smoking effects.
 
 
 ### i
