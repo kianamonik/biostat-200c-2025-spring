@@ -245,7 +245,28 @@ Not by itself. Although the smoking coefficient is significant, this simple bino
 
 ### e 
 Fit a model for each individual response using a GLMM fit using penalized quasi-likelihood. Describe the effects of age and maternal smoking. How do the odds of wheezing change numerically over time?
+```{r}
+library(MASS)
 
+# Fit the GLMM using PQL
+model_pql <- glmmPQL(
+  fixed = resp ~ age + smoke,
+  random = ~ 1 | id,
+  family = binomial,
+  data = ohio,
+  verbose = FALSE
+)
+
+summary(model_pql)
+```
+Intercept (log-odds = -2.77): This is the log-odds of wheezing for a child at age 7 with a nonsmoking mother.\
+Odds of wheezing at that baseline: exp(-2.77) = 0.062, or about 6.2% chancee of wheezing at age 7 for children of nonsmoking mothers.\
+Age (Estimate = -0.18, p < 0.0001): or each additional year of age, the log-odds of wheezing decrease by 0.18.\
+Odds ratio for age: exp(-0.18) = 0.835, meaning the odds of wheezing decrease by about 16.5% for each additional year of age (each year older). This association is also statistically significant due to the extremely low p-value.\
+Maternal Smoking (Estimate = +0.33, p = 0.160): The log-odds of wheezing for children of smoking mothers is 0.33 higher than for children of nonsmoking mothers.\
+Odds ratio for smoking: exp(0.33) = 1.39, meaning children of smoking mothers have about 39% higher odds of wheezing compared to children of nonsmoking mothers, but this effect is not statistically significant (p = 0.1604).\
+How do the odds of wheezing change numerically over time?\
+The odds of wheezing decrease by about 16.5% for each additional year of age, indicating that as children get older, they are less likely to wheeze, regardless of maternal smoking status. The effect of maternal smoking is positive but not statistically significant, suggesting that while there may be a trend towards higher wheezing odds in children of smoking mothers, this effect is not strong enough to draw causal conclusions.
 
 ### f 
 Now fit the same model but using adaptive Gaussian-Hermit quadrature. Compare to the previous model fit.
