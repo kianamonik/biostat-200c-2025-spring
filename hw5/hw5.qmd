@@ -139,6 +139,46 @@ The data show that no child had a change in maternal smoking status during the 4
 
 ### b 
 Construct a table that shows proportion of children who wheeze for 0, 1, 2, 3 or 4 years broken down by maternal smoking status.
+```{r}
+library(tidyr)
+
+# Compute total years of wheezing for each child by summing the resp variable
+children_wheeze <- ohio %>%
+  group_by(id, smoke) %>%
+  summarize(
+    total_wheeze = sum(resp),  
+    .groups = "drop"
+  )
+
+# Count how many children (within each smoke status) have each total_wheeze
+wheeze_counts <- children_wheeze %>%
+  group_by(smoke, total_wheeze) %>%
+  summarize(
+    n_children = n(),
+    .groups = "drop"
+  )
+
+# Convert counts to proportions within each smoke group
+wheeze_props <- wheeze_counts %>%
+  group_by(smoke) %>%
+  mutate(
+    prop = n_children / sum(n_children)
+  ) %>%
+  ungroup()
+
+# Wide Form Table
+wheeze_table_wide <- wheeze_props %>%
+  select(smoke, total_wheeze, prop) %>%
+  pivot_wider(
+    names_from  = smoke,
+    values_from = prop,
+    names_prefix = "smoke_"
+  )
+
+wheeze_props       
+wheeze_table_wide  
+
+```
 
 
 ### c 
