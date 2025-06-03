@@ -196,8 +196,9 @@ wheeze_by_age <- ohio %>%
     .groups = "drop"
   )
 
-# Plot\
-ggplot(wheeze_by_age, aes(x = real_age, y = prop_wheeze, color = factor(smoke))) +
+# Plot
+ggplot(wheeze_by_age, aes(x = real_age, y = prop_wheeze, color =
+                            factor(smoke))) +
   geom_line(size = 1.2) +
   geom_point(size = 2) +
   labs(
@@ -216,6 +217,30 @@ ggplot(wheeze_by_age, aes(x = real_age, y = prop_wheeze, color = factor(smoke)))
 Group the data by child to count the total (out of four) years of wheezing.\
 Fit a binomial GLM to this response to check for a maternal smoking effect.\
 Does this prove there is a smoking effect or could there be another plausible explanation?\
+```{r}
+# Count wheezing years per child
+wheeze_summary <- ohio %>%
+  group_by(id) %>%
+  summarize(
+    wheeze_years = sum(resp),     
+    no_wheeze_years = 4 - wheeze_years, 
+    smoke = first(smoke),         
+    .groups = "drop"
+  )
+
+# Fit binomial GLM
+model_binom <- glm(
+  cbind(wheeze_years, no_wheeze_years) ~ smoke,
+  family = binomial,
+  data = wheeze_summary
+)
+
+summary(model_binom)
+```
+Smoke coefficient: log-odds = 0.272 -> odds = exp(0.272) = 1.313\
+Children of smoking mothers have about 1.31 times higher odds of wheezing (in a given year) compared to children of nonsmoking mothers. Because p = 0.0277 (< 0.05), this association is statistically significant at the 0.05 threshold level.\
+Does this prove there is a smoking effect or could there be another plausible explanation?\
+Not by itself. Although the smoking coefficient is significant, this simple binomial GLM cannot by itself prove a causal smoking effect. By collapsing each child’s four yearly observations into a single count (ignoring the study's repeated measures structure), it ignores how wheeze risk changes with age and treats each year as independent, but it's likely a child who wheezes once is likelier to wheeze again. It also doesn't adjust for other possibly significant factors (such as socioeconomic status or genetic predisposition) and assumes no extra variability beyond the binomial model. Because of these limitations, a model that accounts for age effects and within‐child correlation—such as a GLMM or GEE would be more appropriate for drawing causal conclusions.
 
 
 ### e 
