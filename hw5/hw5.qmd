@@ -287,7 +287,23 @@ The GLMM fitted using adaptive Gaussian-Hermite quadrature (AGHQ) produces resul
 
 ### i
 Fit the model using GEE. Use an autoregressive rather than exchangeable error structure. Compare the results to the previous model fits. In your model, what indicates that a child who already wheezes is likely to continue to wheeze?
+```{r}
+library(geepack)
 
+# Fit GEE
+model_gee_ar1 <- geeglm(
+  formula = resp ~ age + smoke,
+  data = ohio,
+  id = id, 
+  family = binomial,
+  corstr = "ar1"
+)
+
+summary(model_gee_ar1)
+```
+The GEE model with an AR(1) correlation structure gives results that are largely consistent with the earlier GLMMs. The age effect remains statistically significant, with an estimated coefficient of –0.115 (and much less extreme p-value of p = 0.011), indicating that each additional year of age is associated with approximately a 10.9% reduction in the odds of wheezing (OR = 0.89). The effect of maternal smoking remains positive (estimate = 0.234) but not statistically significant (p = 0.196), in line with previous models.\
+In your model, what indicates that a child who already wheezes is likely to continue to wheeze?\
+AR(1) correlation (alphaa = 0.491): An autoregressive (AR1) correlation structure assumes that repeated measures taken closer in time are more strongly correlated. The estimated AR(1) correlation coefficient, alpha = 0.491, suggests a moderate positive correlation in wheezing responses across years within the same child. This means that if a child wheezes in one year, they are substantially more likely to wheeze in the following year. This autoregressive correlation captures the persistence of wheezing over time and supports the idea that wheezing is not purely random from year to year, but rather tends to reoccur within individuals.\
 
 ### j 
 What is your overall conclusion regarding the effect of age and maternal smok-ing? Can we trust the GLM result or are the GLMM models preferable?
