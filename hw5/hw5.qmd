@@ -270,7 +270,20 @@ The odds of wheezing decrease by about 16.5% for each additional year of age, in
 
 ### f 
 Now fit the same model but using adaptive Gaussian-Hermit quadrature. Compare to the previous model fit.
+```{r}
+library(lme4)
 
+# Fit GLMM using AGHQ
+model_agq <- glmer(
+  resp ~ age + smoke + (1 | id),
+  data   = ohio,
+  family = binomial,
+  nAGQ   = 10
+)
+
+summary(model_agq)
+```
+The GLMM fitted using adaptive Gaussian-Hermite quadrature (AGHQ) produces results that are broadly consistent with the earlier model fitted using penalized quasi-likelihood (PQL). Both models suggest that age has a significant negative effect on wheezing odds, while maternal smoking shows a positive but non-significant effect. One key difference is that the AGHQ model is based on full likelihood estimation and provides more accurate standard errors and valid model comparison criteria such as AIC and BIC. In contrast, the PQL model approximates the likelihood and is known to underestimate standard errors, making it less reliable for inference.
 
 ### i
 Fit the model using GEE. Use an autoregressive rather than exchangeable error structure. Compare the results to the previous model fits. In your model, what indicates that a child who already wheezes is likely to continue to wheeze?
